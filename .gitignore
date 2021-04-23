@@ -4,4 +4,4 @@ results/*
 *.pyc
 *.npy
 *.out
-
+AlzVenv/
