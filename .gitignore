@@ -11,3 +11,5 @@ AlzVenv/
 *.png
 *.txt
 MatlabScripts/*
+altas_analyzer/*
+
