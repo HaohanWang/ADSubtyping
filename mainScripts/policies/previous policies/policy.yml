@@ -1,0 +1,23 @@
+data:
+  name: 'MRIDataset'
+  dir: 'ADNI_CAPS'
+  params:
+    idx_fold: 0
+    num_fold: 5
+
+model:
+  name: 'Conv5_FC3'
+
+train:
+  dir: './results/policy_lr5'
+  batch_size: 6
+  num_epochs: 60
+
+optimizer:
+  name: 'adam'
+  params:
+    lr: 0.00001
+
+transform:
+  name: 'MinMaxNormalization'
+  num_preprocessor: 4

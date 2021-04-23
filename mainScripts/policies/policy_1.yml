@@ -1,0 +1,43 @@
+data:
+  name: 'MRIDataset'
+  dir: '../data/ADNI_CAPS'
+  params:
+    weighted_sampler: True
+    idx_fold: 0
+    num_fold: 5
+
+model:
+  name: 'Conv5_FC3'
+  params:
+    dropout: 0.3
+    dropblock: False
+    blocksize: 10
+    convKernel1: 5
+    poolKernel1: 2
+    convKernel2: 3
+    poolKernel2: 3
+    poolKernel3: 2
+    fcSize1: 3456
+    fcSize2: 2048
+
+train:
+  dir: ../results/checkpoints/policy1_lr1e-4/
+  batch_size: 8
+  num_epochs: 25
+
+optimizer:
+  name: 'adam'
+  params:
+    lr: 0.0001
+
+pgd:
+  use: False
+  eps: 0.005
+  alpha: 0.000125
+  iters: 10
+  loss:
+    alpha: 0.01
+
+transform:
+  name: 'MinMaxNormalization'
+  num_preprocessor: 4
