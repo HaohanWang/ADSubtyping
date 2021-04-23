@@ -5,3 +5,7 @@ results/*
 *.npy
 *.out
 AlzVenv/
+*.pdf
+*.csv
+*.tsv
+*.png
