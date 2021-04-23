@@ -9,3 +9,5 @@ AlzVenv/
 *.csv
 *.tsv
 *.png
+*.txt
+MatlabScripts/*
