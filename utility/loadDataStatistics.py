@@ -29,7 +29,7 @@ def sortInformation(trainFlag=True):
     info = sorted(info)
 
     for line in info:
-        print line
+        print (line)
 
     f = open('../outputs/sortedInfo.csv', 'w')
     for line in info:
