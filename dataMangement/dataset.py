@@ -75,7 +75,7 @@ class MRIDataset(Dataset):
         self.idx_fold = idx_fold
         self.num_fold = num_fold
         self.split_prefix='split'
-        df_path = join(img_dir, f'split.stratified.{idx_fold}.csv')
+        df_path = join(img_dir, f'split.pretrained.{idx_fold}.csv')
         df = pd.read_csv(df_path)
         df = df[df['split']==split]
         self.df = df.reset_index()
@@ -84,6 +84,8 @@ class MRIDataset(Dataset):
         self.size = self[0]['image'].numpy().size
 
     def __len__(self):
+        # shuffle
+        self.df = self.df.sample(frac=1).reset_index(drop=True)
         return len(self.df)
 
     def __getitem__(self, idx):

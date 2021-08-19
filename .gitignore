@@ -12,4 +12,6 @@ AlzVenv/
 *.txt
 MatlabScripts/*
 atlas_analyzer/*
-
+venv/*
+*/weights/*
+pretrainModels/*

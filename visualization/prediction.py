@@ -20,7 +20,7 @@ import math
 
 from dataMangement.dataset import MRIDataset
 from dataMangement.dataset import get_dataloader
-from mainScripts.model import get_model
+from mainScripts_torch.model import get_model
 from utility import config_utils
 
 

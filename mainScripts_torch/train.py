@@ -166,6 +166,7 @@ def train(config, model, dataloaders, criterion, optimizer, pgd_attack, writer, 
     if torch.cuda.device_count() > 1:
         model = torch.nn.DataParallel(model)
     model = model.cuda()
+    model = model.load_state_dict('../pretrainModels/best_model/fold_0/model_best.pth.tar')
 
     postfix_dict = {'train/lr': 0.0,
                     'train/loss': 0.0,

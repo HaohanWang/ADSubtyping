@@ -1,6 +1,6 @@
 data:
   name: 'MRIDataset'
-  dir: '../data/ADNI_CAPS'
+  dir: '/media/haohanwang/Info/ADNI_CAPS'
   params:
     weighted_sampler: True
     idx_fold: 0
