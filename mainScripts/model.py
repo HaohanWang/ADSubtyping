@@ -3,7 +3,7 @@ __author__ = 'Haohan Wang'
 import os
 import sys
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import tensorflow as tf
 from tensorflow import keras
@@ -61,10 +61,10 @@ class MRIImaging3DConvModel(tf.keras.Model):
         self.bn5 = layers.BatchNormalization(weights=self.setBatchNormWeights(17))
         self.pool5 = layers.MaxPool3D(pool_size=2)
 
-        self.gap = layers.GlobalAveragePooling3D()
+        self.gap = layers.Flatten()
         self.dp = layers.Dropout(0.5)
-        self.dense1 = layers.Dense(units=1200, activation="relu")
-        self.dense2 = layers.Dense(units=50, activation="relu")
+        self.dense1 = layers.Dense(units=1024, activation="relu")
+        self.dense2 = layers.Dense(units=128, activation="relu")
         self.classifier = layers.Dense(units=nClass, activation="relu")
 
     def call(self, inputs, training=None, mask=None):
@@ -108,19 +108,29 @@ class MRIImaging3DConvModel(tf.keras.Model):
 
         return [w, b, m, v]
 
+def getSaveName(args):
+    saveName = ''
+    if args.augmented:
+        saveName = saveName + '_aug'
+    if args.mci:
+        saveName = saveName + '_mci'
+        if args.mci_balanced:
+            saveName = saveName + '_balanced'
+    saveName = saveName + '_fold_' + str(args.idx_fold) + '_seed_' + str(args.seed)
+    return saveName
 
 def train(args):
     num_classes = 2
 
-    transform = None
+    ## todo: make some fake training data with holes in brain
 
     trainData = MRIDataGenerator('/media/haohanwang/Info/ADNI_CAPS',
                                  split='train',
                                  batchSize=args.batch_size,
-                                 MCI_included=True,
-                                 MCI_included_as_soft_label=True,
+                                 MCI_included=args.mci,
+                                 MCI_included_as_soft_label=args.mci_balanced,
                                  idx_fold=args.idx_fold,
-                                 transform=transform)
+                                 augmented = args.augmented)
 
     validationData = MRIDataGenerator('/media/haohanwang/Info/ADNI_CAPS',
                                       batchSize=args.batch_size,
@@ -134,7 +144,7 @@ def train(args):
 
     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
 
-    opt = optimizers.Adam(learning_rate=5e-5)
+    opt = optimizers.Adam(learning_rate=5e-6)
     loss_fn = losses.CategoricalCrossentropy(from_logits=True)
     train_acc_metric = metrics.CategoricalAccuracy()
     val_acc_metric = metrics.CategoricalAccuracy()
@@ -203,7 +213,7 @@ def train(args):
 
         sys.stdout.flush()
 
-    model.save_weights('weights/weights')
+        model.save_weights('weights/weights_' + getSaveName(args) + str(epoch))
 
 
 def main(args):
@@ -212,17 +222,21 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-e', '--epochs', type=int, default=20, help='How many epochs to run in total?')
+    parser.add_argument('-e', '--epochs', type=int, default=50, help='How many epochs to run in total?')
     parser.add_argument('-b', '--batch_size', type=int, default=8,
                         help='Batch size during training per GPU')
     parser.add_argument('-a', '--action', type=int, default=0, help='action to take')
     parser.add_argument('-s', '--seed', type=int, default=1, help='random seed')
     parser.add_argument('-i', '--idx_fold', type=int, default=0, help='which partition of data to use')
+    parser.add_argument('-u', '--augmented', type=int, default=0, help='whether use augmentation or not')
+    parser.add_argument('-m', '--mci', type=int, default=0, help='whether use MCI data or not')
+    parser.add_argument('-l', '--mci_balanced', type=int, default=0, help='when using MCI, whether including it as a balanced data')
+
 
     args = parser.parse_args()
 
-    tf.random.set_seed(100)
-    np.random.seed(1)
+    tf.random.set_seed(args.seed)
+    np.random.seed(args.seed)
 
     # pretty print args
     print('input args:\n', json.dumps(vars(args), indent=4, separators=(',', ':')))

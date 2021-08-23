@@ -24,6 +24,7 @@ class MRIDataGenerator(keras.utils.Sequence):
                  dim=(169, 208, 179),
                  n_channels=1,
                  n_classes=2,
+                 augmented = True,
                  MCI_included=False,
                  MCI_included_as_soft_label=False
                  ):
@@ -38,6 +39,7 @@ class MRIDataGenerator(keras.utils.Sequence):
         self.dim = dim
         self.n_channels = n_channels
         self.n_classes = n_classes
+        self.augmented = augmented
         self.MCI_included = MCI_included
         self.MCI_included_as_soft_label = MCI_included_as_soft_label
 
@@ -54,7 +56,8 @@ class MRIDataGenerator(keras.utils.Sequence):
     def __getitem__(self, idx):
         if self.split == 'train':
             images, labels = self._load_batch_image_train(idx)
-            images = self.dataAugmentation.augmentData_batch(images)
+            if self.augmented:
+                images = self.dataAugmentation.augmentData_batch(images)
         else:
             images, labels = self._load_batch_image_test(idx)
         return images, labels
@@ -103,7 +106,9 @@ class MRIDataGenerator(keras.utils.Sequence):
             np.random.shuffle(self.filePaths_MCI)
 
     def _load_one_image(self, image_path):
-        return torch.load(image_path)
+        d = torch.load(image_path).cpu().numpy().astype(np.float32)
+        d = (d - np.min(d)) / (np.max(d) - np.min(d))
+        return d
 
     def _get_batch_split(self):
         if self.MCI_included:
@@ -162,7 +167,7 @@ class MRIDataGenerator(keras.utils.Sequence):
         idxlist = [*range(idx * self.batch_size, (idx + 1) * self.batch_size)]
         idxlist = self._rotate_idx(idxlist, len(self.filePaths_test))
 
-        images = np.zeros((self.batch_size, *self.dim, self.n_channels))
+        images = np.zeros((self.batch_size, *self.dim, self.n_channels)).astype(np.float32)
         labels = np.zeros((self.batch_size))
 
         for i in range(self.batch_size):
