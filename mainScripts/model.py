@@ -108,6 +108,18 @@ class MRIImaging3DConvModel(tf.keras.Model):
 
         return [w, b, m, v]
 
+    def calculateGradients(self, x, y):
+        x = tf.convert_to_tensor(x)
+        with tf.GradientTape() as tape:
+            tape.watch(x)
+            prediction = self(x, training=False)
+            loss = losses.CategoricalCrossentropy(from_logits=True)(y, prediction)
+
+            # Get the gradients of the loss w.r.t to the input image.
+        gradient = tape.gradient(loss, x)
+        return gradient
+
+
 def getSaveName(args):
     saveName = ''
     if args.augmented:
@@ -116,8 +128,11 @@ def getSaveName(args):
         saveName = saveName + '_mci'
         if args.mci_balanced:
             saveName = saveName + '_balanced'
+    if args.pgd != 0:
+        saveName = saveName + '_pgd_' + str(args.pgd)
     saveName = saveName + '_fold_' + str(args.idx_fold) + '_seed_' + str(args.seed)
     return saveName
+
 
 def train(args):
     num_classes = 2
@@ -130,7 +145,7 @@ def train(args):
                                  MCI_included=args.mci,
                                  MCI_included_as_soft_label=args.mci_balanced,
                                  idx_fold=args.idx_fold,
-                                 augmented = args.augmented)
+                                 augmented=args.augmented)
 
     validationData = MRIDataGenerator('/media/haohanwang/Info/ADNI_CAPS',
                                       batchSize=args.batch_size,
@@ -178,11 +193,30 @@ def train(args):
     total_step_val = math.ceil(len(validationData) / args.batch_size)
     total_step_test = math.ceil(len(testData) / args.batch_size)
 
+    if args.continueEpoch != 0:
+        model.load_weights('weights/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+
     for epoch in range(1, args.epochs + 1):
+
+        if epoch <= args.continueEpoch:
+            continue
+
         start_time = time.time()
 
         for i in range(total_step_train):
             images, labels = trainData[i]
+
+            if args.pgd != 0:
+                images += np.random.random(size=images.shape) * args.pgd
+                grad = model.calculateGradients(images, labels)
+
+                images += args.pgd * np.sign(grad)
+
+                images = np.clip(images,
+                                 images - args.pgd,
+                                 images + args.pgd)
+                images = np.clip(images, 0, 1)  # ensure valid pixel range
+
             loss_value = train_step(images, labels)
             train_acc = train_acc_metric.result()
 
@@ -213,7 +247,7 @@ def train(args):
 
         sys.stdout.flush()
 
-        model.save_weights('weights/weights_' + getSaveName(args) + str(epoch))
+        model.save_weights('weights/weights' + getSaveName(args) + '_epoch_' + str(epoch))
 
 
 def main(args):
@@ -230,8 +264,10 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--idx_fold', type=int, default=0, help='which partition of data to use')
     parser.add_argument('-u', '--augmented', type=int, default=0, help='whether use augmentation or not')
     parser.add_argument('-m', '--mci', type=int, default=0, help='whether use MCI data or not')
-    parser.add_argument('-l', '--mci_balanced', type=int, default=0, help='when using MCI, whether including it as a balanced data')
-
+    parser.add_argument('-l', '--mci_balanced', type=int, default=0,
+                        help='when using MCI, whether including it as a balanced data')
+    parser.add_argument('-c', '--continueEpoch', type=int, default=0, help='continue from current epoch')
+    parser.add_argument('-p', '--pgd', type=float, default=0, help='whether we use pgd (actually fast fgsm)')
 
     args = parser.parse_args()
 
