@@ -15,7 +15,7 @@ import math
 import json
 import argparse
 
-from DataGenerator import MRIDataGenerator
+from DataGenerator import MRIDataGenerator, MRIDataGenerator_Simple
 
 
 class minMaxPool(tf.keras.layers.Layer):
@@ -39,27 +39,42 @@ class MRIImaging3DConvModel(tf.keras.Model):
         self.conv1 = layers.Conv3D(filters=8, kernel_size=3,
                                    weights=self.setConvWeights(0))
         self.bn1 = layers.BatchNormalization(weights=self.setBatchNormWeights(1))
-        self.pool1 = layers.MaxPool3D(pool_size=2)
+        if args.minmax:
+            self.pool1 = minMaxPool(pool_size=2)
+        else:
+            self.pool1 = layers.MaxPool3D(pool_size=2)
 
         self.conv2 = layers.Conv3D(filters=16, kernel_size=3,
                                    weights=self.setConvWeights(4))
         self.bn2 = layers.BatchNormalization(weights=self.setBatchNormWeights(5))
-        self.pool2 = layers.MaxPool3D(pool_size=2)
+        if args.minmax:
+            self.pool2 = minMaxPool(pool_size=2)
+        else:
+            self.pool2 = layers.MaxPool3D(pool_size=2)
 
         self.conv3 = layers.Conv3D(filters=32, kernel_size=3,
                                    weights=self.setConvWeights(8))
         self.bn3 = layers.BatchNormalization(weights=self.setBatchNormWeights(9))
-        self.pool3 = layers.MaxPool3D(pool_size=2)
+        if args.minmax:
+            self.pool3 = minMaxPool(pool_size=2)
+        else:
+            self.pool3 = layers.MaxPool3D(pool_size=2)
 
         self.conv4 = layers.Conv3D(filters=64, kernel_size=3,
                                    weights=self.setConvWeights(12))
         self.bn4 = layers.BatchNormalization(weights=self.setBatchNormWeights(13))
-        self.pool4 = layers.MaxPool3D(pool_size=2)
+        if args.minmax:
+            self.pool4 = minMaxPool(pool_size=2)
+        else:
+            self.pool4 = layers.MaxPool3D(pool_size=2)
 
         self.conv5 = layers.Conv3D(filters=128, kernel_size=3,
                                    weights=self.setConvWeights(16))
         self.bn5 = layers.BatchNormalization(weights=self.setBatchNormWeights(17))
-        self.pool5 = layers.MaxPool3D(pool_size=2)
+        if args.minmax:
+            self.pool5 = minMaxPool(pool_size=2)
+        else:
+            self.pool5 = layers.MaxPool3D(pool_size=2)
 
         self.gap = layers.Flatten()
         self.dp = layers.Dropout(0.5)
@@ -121,17 +136,38 @@ class MRIImaging3DConvModel(tf.keras.Model):
 
 
 def getSaveName(args):
-    saveName = ''
-    if args.augmented:
-        saveName = saveName + '_aug'
-    if args.mci:
-        saveName = saveName + '_mci'
-        if args.mci_balanced:
-            saveName = saveName + '_balanced'
-    if args.pgd != 0:
-        saveName = saveName + '_pgd_' + str(args.pgd)
-    saveName = saveName + '_fold_' + str(args.idx_fold) + '_seed_' + str(args.seed)
-    return saveName
+
+    if args.weights_folder != 'weights_regular_training':
+        ## new style
+        saveName = ''
+        if args.augmented:
+            saveName = saveName + '_aug'
+        if args.mci:
+            saveName = saveName + '_mci'
+            if args.mci_balanced:
+                saveName = saveName + '_balanced'
+        if args.pgd != 0:
+            saveName = saveName + '_pgd_' + str(args.pgd)
+        if args.minmax:
+            saveName = saveName + '_mm'
+        saveName = saveName + '_fold_' + str(args.idx_fold) + '_seed_' + str(args.seed)
+        return saveName
+
+    else:
+        ## old style
+        saveName = '_'
+        if args.augmented:
+            saveName = saveName + '_aug'
+        if args.mci:
+            saveName = saveName + '_mci'
+            if args.mci_balanced:
+                saveName = saveName + '_balanced'
+        if args.pgd != 0:
+            saveName = saveName + '_pgd_' + str(args.pgd)
+        if args.minmax:
+            saveName = saveName + '_mm'
+        saveName = saveName + '_fold_' + str(args.idx_fold) + '_seed_' + str(args.seed)
+        return saveName
 
 
 def train(args):
@@ -139,7 +175,7 @@ def train(args):
 
     ## todo: make some fake training data with holes in brain
 
-    trainData = MRIDataGenerator('/media/haohanwang/Info/ADNI_CAPS',
+    trainData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
                                  split='train',
                                  batchSize=args.batch_size,
                                  MCI_included=args.mci,
@@ -147,12 +183,12 @@ def train(args):
                                  idx_fold=args.idx_fold,
                                  augmented=args.augmented)
 
-    validationData = MRIDataGenerator('/media/haohanwang/Info/ADNI_CAPS',
+    validationData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
                                       batchSize=args.batch_size,
                                       idx_fold=args.idx_fold,
                                       split='val')
 
-    testData = MRIDataGenerator('/media/haohanwang/Info/ADNI_CAPS',
+    testData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
                                 batchSize=args.batch_size,
                                 idx_fold=args.idx_fold,
                                 split='test')
@@ -163,9 +199,6 @@ def train(args):
     loss_fn = losses.CategoricalCrossentropy(from_logits=True)
     train_acc_metric = metrics.CategoricalAccuracy()
     val_acc_metric = metrics.CategoricalAccuracy()
-
-    model.build(input_shape=(1, 169, 208, 179, 1))
-    print(model.summary())
 
     @tf.function
     def train_step(x, y):
@@ -249,6 +282,75 @@ def train(args):
 
         model.save_weights('weights/weights' + getSaveName(args) + '_epoch_' + str(epoch))
 
+def evaluate_crossDataSet(args):
+    num_classes = 2
+
+    ADNI_testData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+                                batchSize=args.batch_size,
+                                idx_fold=args.idx_fold,
+                                split='test')
+
+    AIBL_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS',
+                                            'aibl_info.csv', batchSize=args.batch_size)
+
+    MIRIAD_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS',
+                                            'miriad_test_info.csv', batchSize=args.batch_size)
+
+    OASIS3_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS',
+                                            'oasis3_test_info_2.csv', batchSize=args.batch_size)
+
+    model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+
+    val_acc_metric = metrics.CategoricalAccuracy()
+
+    @tf.function
+    def test_step(x, y):
+        # embedding = model_encoder(x, training=False)
+        # val_logits = model_decoder(embedding, training=False)
+        val_logits = model(x, training=False)
+        val_acc_metric.update_state(y, val_logits)
+
+    total_step_test_ADNI = math.ceil(len(ADNI_testData) / args.batch_size)
+    total_step_test_AIBL = math.ceil(len(AIBL_testData) / args.batch_size)
+    total_step_test_MIRIAD = math.ceil(len(MIRIAD_testData) / args.batch_size)
+    total_step_test_OASIS3 = math.ceil(len(OASIS3_testData) / args.batch_size)
+
+    if args.weights_folder != 'weights_regular_training':
+        model.load_weights('weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+    else:
+        model.load_weights('weights/' + args.weights_folder + '/weights' + getSaveName(args) + str(args.continueEpoch))
+
+    print ('Testing Start ...')
+
+    for i in range(total_step_test_ADNI):
+        images, labels = ADNI_testData[i]
+        test_step(images, labels)
+    val_acc = val_acc_metric.result()
+    val_acc_metric.reset_states()
+    print("\tADNI Test acc: %.4f" % (float(val_acc),))
+
+    for i in range(total_step_test_AIBL):
+        images, labels = AIBL_testData[i]
+        test_step(images, labels)
+    val_acc = val_acc_metric.result()
+    val_acc_metric.reset_states()
+    print("\tAIBL Test acc: %.4f" % (float(val_acc),))
+
+    for i in range(total_step_test_MIRIAD):
+        images, labels = MIRIAD_testData[i]
+        test_step(images, labels)
+    val_acc = val_acc_metric.result()
+    val_acc_metric.reset_states()
+    print("\tMIRIAD Test acc: %.4f" % (float(val_acc),))
+
+    for i in range(total_step_test_OASIS3):
+        images, labels = OASIS3_testData[i]
+        test_step(images, labels)
+    val_acc = val_acc_metric.result()
+    val_acc_metric.reset_states()
+    print("\tOASIS3 Test acc: %.4f" % (float(val_acc),))
+
+    sys.stdout.flush()
 
 def main(args):
     train(args)
@@ -268,6 +370,9 @@ if __name__ == "__main__":
                         help='when using MCI, whether including it as a balanced data')
     parser.add_argument('-c', '--continueEpoch', type=int, default=0, help='continue from current epoch')
     parser.add_argument('-p', '--pgd', type=float, default=0, help='whether we use pgd (actually fast fgsm)')
+    parser.add_argument('-n', '--minmax', type=int, default=0, help='whether we use min max pooling')
+    parser.add_argument('-f', '--weights_folder', type=str, default='', help='the folder weights are saved')
+
 
     args = parser.parse_args()
 
@@ -276,4 +381,8 @@ if __name__ == "__main__":
 
     # pretty print args
     print('input args:\n', json.dumps(vars(args), indent=4, separators=(',', ':')))
-    main(args)
+
+    if args.action == 0:
+        main(args)
+    elif args.action == 1:
+        evaluate_crossDataSet(args)

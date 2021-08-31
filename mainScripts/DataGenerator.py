@@ -175,3 +175,85 @@ class MRIDataGenerator(keras.utils.Sequence):
             labels[i] = self.labels_test[idxlist[i]]
 
         return images, tf.one_hot(labels, self.n_classes)
+
+class MRIDataGenerator_Simple(keras.utils.Sequence):
+    'Generates data for Keras'
+
+    def __init__(self, img_dir,
+                 csv_path,
+                 batchSize=32,
+                 dim=(169, 208, 179),
+                 n_channels=1,
+                 n_classes=2,
+                 ):
+        # 'Initialization'
+
+        self.img_dir = img_dir
+        self.csv_path = csv_path
+        self.batch_size = batchSize
+        self.dim = dim
+        self.n_channels = n_channels
+        self.n_classes = n_classes
+
+        self.diagIndex = -1
+        if self.img_dir.find('OASIS') != -1:
+            self.diagIndex = -2
+
+        self.parse_csv_file()
+
+        self.dataAugmentation = MRIDataAugmentation(self.dim, 0.5)
+
+    def __len__(self):
+        self.on_epoch_end()
+        return self.totalLength
+
+    def __getitem__(self, idx):
+        images, labels = self._load_batch_image_test(idx)
+        return images, labels
+
+    def parse_csv_file(self):
+        csv_path = join(self.img_dir, self.csv_path)
+        text = [line.strip() for line in open(csv_path)]
+        self.filePaths_test = []
+        self.labels_test = []
+
+        for line in text[1:]:
+            items = line.split(',')
+            image_path = join(self.img_dir, 'subjects', items[0], items[1], 't1_linear', items[0] + '_' + items[1] + '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt')
+
+            if items[self.diagIndex] == 'AD':
+                self.labels_test.append(1)
+                self.filePaths_test.append(image_path)
+            elif items[self.diagIndex] == 'CN':
+                self.labels_test.append(0)
+                self.filePaths_test.append(image_path)
+
+        self.totalLength = len(self.filePaths_test)
+
+    def on_epoch_end(self):
+        pass
+
+    def _rotate_idx(self, l, m):
+        for i in range(len(l)):
+            while l[i] >= m:
+                l[i] = l[i] - m
+        return l
+
+    def _load_one_image(self, image_path):
+        d = torch.load(image_path).cpu().numpy().astype(np.float32)
+        d = (d - np.min(d)) / (np.max(d) - np.min(d))
+        return d
+
+
+    def _load_batch_image_test(self, idx):
+        idxlist = [*range(idx * self.batch_size, (idx + 1) * self.batch_size)]
+        idxlist = self._rotate_idx(idxlist, len(self.filePaths_test))
+
+        images = np.zeros((self.batch_size, *self.dim, self.n_channels)).astype(np.float32)
+        labels = np.zeros((self.batch_size))
+
+        for i in range(self.batch_size):
+            images[i,:,:,:,0] = self._load_one_image(self.filePaths_test[idxlist[i]])
+            labels[i] = self.labels_test[idxlist[i]]
+
+        return images, tf.one_hot(labels, self.n_classes)
