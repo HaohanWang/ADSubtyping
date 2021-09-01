@@ -34,53 +34,95 @@ class MRIImaging3DConvModel(tf.keras.Model):
     def __init__(self, nClass, args):
         super(MRIImaging3DConvModel, self).__init__()
 
-        self.weights_folder = '../pretrainModels/best_model/fold_' + str(args.idx_fold) + '/npy_weights/'
+        if args.continueEpoch == 0:
+            self.weights_folder = '../pretrainModels/best_model/fold_' + str(args.idx_fold) + '/npy_weights/'
 
-        self.conv1 = layers.Conv3D(filters=8, kernel_size=3,
-                                   weights=self.setConvWeights(0))
-        self.bn1 = layers.BatchNormalization(weights=self.setBatchNormWeights(1))
-        if args.minmax:
-            self.pool1 = minMaxPool(pool_size=2)
+            self.conv1 = layers.Conv3D(filters=8, kernel_size=3,
+                                       weights=self.setConvWeights(0))
+            self.bn1 = layers.BatchNormalization(weights=self.setBatchNormWeights(1))
+            if args.minmax:
+                self.pool1 = minMaxPool(pool_size=2)
+            else:
+                self.pool1 = layers.MaxPool3D(pool_size=2)
+
+            self.conv2 = layers.Conv3D(filters=16, kernel_size=3,
+                                       weights=self.setConvWeights(4))
+            self.bn2 = layers.BatchNormalization(weights=self.setBatchNormWeights(5))
+            if args.minmax:
+                self.pool2 = minMaxPool(pool_size=2)
+            else:
+                self.pool2 = layers.MaxPool3D(pool_size=2)
+
+            self.conv3 = layers.Conv3D(filters=32, kernel_size=3,
+                                       weights=self.setConvWeights(8))
+            self.bn3 = layers.BatchNormalization(weights=self.setBatchNormWeights(9))
+            if args.minmax:
+                self.pool3 = minMaxPool(pool_size=2)
+            else:
+                self.pool3 = layers.MaxPool3D(pool_size=2)
+
+            self.conv4 = layers.Conv3D(filters=64, kernel_size=3,
+                                       weights=self.setConvWeights(12))
+            self.bn4 = layers.BatchNormalization(weights=self.setBatchNormWeights(13))
+            if args.minmax:
+                self.pool4 = minMaxPool(pool_size=2)
+            else:
+                self.pool4 = layers.MaxPool3D(pool_size=2)
+
+            self.conv5 = layers.Conv3D(filters=128, kernel_size=3,
+                                       weights=self.setConvWeights(16))
+            self.bn5 = layers.BatchNormalization(weights=self.setBatchNormWeights(17))
+            if args.minmax:
+                self.pool5 = minMaxPool(pool_size=2)
+            else:
+                self.pool5 = layers.MaxPool3D(pool_size=2)
+
+            self.gap = layers.Flatten()
+            self.dp = layers.Dropout(0.5)
+            self.dense1 = layers.Dense(units=1024, activation="relu")
+            self.dense2 = layers.Dense(units=128, activation="relu")
+            self.classifier = layers.Dense(units=nClass, activation="relu")
         else:
-            self.pool1 = layers.MaxPool3D(pool_size=2)
+            self.conv1 = layers.Conv3D(filters=8, kernel_size=3)
+            self.bn1 = layers.BatchNormalization()
+            if args.minmax:
+                self.pool1 = minMaxPool(pool_size=2)
+            else:
+                self.pool1 = layers.MaxPool3D(pool_size=2)
 
-        self.conv2 = layers.Conv3D(filters=16, kernel_size=3,
-                                   weights=self.setConvWeights(4))
-        self.bn2 = layers.BatchNormalization(weights=self.setBatchNormWeights(5))
-        if args.minmax:
-            self.pool2 = minMaxPool(pool_size=2)
-        else:
-            self.pool2 = layers.MaxPool3D(pool_size=2)
+            self.conv2 = layers.Conv3D(filters=16, kernel_size=3)
+            self.bn2 = layers.BatchNormalization()
+            if args.minmax:
+                self.pool2 = minMaxPool(pool_size=2)
+            else:
+                self.pool2 = layers.MaxPool3D(pool_size=2)
 
-        self.conv3 = layers.Conv3D(filters=32, kernel_size=3,
-                                   weights=self.setConvWeights(8))
-        self.bn3 = layers.BatchNormalization(weights=self.setBatchNormWeights(9))
-        if args.minmax:
-            self.pool3 = minMaxPool(pool_size=2)
-        else:
-            self.pool3 = layers.MaxPool3D(pool_size=2)
+            self.conv3 = layers.Conv3D(filters=32, kernel_size=3)
+            self.bn3 = layers.BatchNormalization()
+            if args.minmax:
+                self.pool3 = minMaxPool(pool_size=2)
+            else:
+                self.pool3 = layers.MaxPool3D(pool_size=2)
 
-        self.conv4 = layers.Conv3D(filters=64, kernel_size=3,
-                                   weights=self.setConvWeights(12))
-        self.bn4 = layers.BatchNormalization(weights=self.setBatchNormWeights(13))
-        if args.minmax:
-            self.pool4 = minMaxPool(pool_size=2)
-        else:
-            self.pool4 = layers.MaxPool3D(pool_size=2)
+            self.conv4 = layers.Conv3D(filters=64, kernel_size=3)
+            self.bn4 = layers.BatchNormalization()
+            if args.minmax:
+                self.pool4 = minMaxPool(pool_size=2)
+            else:
+                self.pool4 = layers.MaxPool3D(pool_size=2)
 
-        self.conv5 = layers.Conv3D(filters=128, kernel_size=3,
-                                   weights=self.setConvWeights(16))
-        self.bn5 = layers.BatchNormalization(weights=self.setBatchNormWeights(17))
-        if args.minmax:
-            self.pool5 = minMaxPool(pool_size=2)
-        else:
-            self.pool5 = layers.MaxPool3D(pool_size=2)
+            self.conv5 = layers.Conv3D(filters=128, kernel_size=3)
+            self.bn5 = layers.BatchNormalization()
+            if args.minmax:
+                self.pool5 = minMaxPool(pool_size=2)
+            else:
+                self.pool5 = layers.MaxPool3D(pool_size=2)
 
-        self.gap = layers.Flatten()
-        self.dp = layers.Dropout(0.5)
-        self.dense1 = layers.Dense(units=1024, activation="relu")
-        self.dense2 = layers.Dense(units=128, activation="relu")
-        self.classifier = layers.Dense(units=nClass, activation="relu")
+            self.gap = layers.Flatten()
+            self.dp = layers.Dropout(0.5)
+            self.dense1 = layers.Dense(units=1024, activation="relu")
+            self.dense2 = layers.Dense(units=128, activation="relu")
+            self.classifier = layers.Dense(units=nClass, activation="relu")
 
     def call(self, inputs, training=None, mask=None):
         x = self.conv1(inputs)
@@ -137,38 +179,19 @@ class MRIImaging3DConvModel(tf.keras.Model):
 
 def getSaveName(args):
 
-    if args.weights_folder != 'weights_regular_training':
-        ## new style
-        saveName = ''
-        if args.augmented:
-            saveName = saveName + '_aug'
-        if args.mci:
-            saveName = saveName + '_mci'
-            if args.mci_balanced:
-                saveName = saveName + '_balanced'
-        if args.pgd != 0:
-            saveName = saveName + '_pgd_' + str(args.pgd)
-        if args.minmax:
-            saveName = saveName + '_mm'
-        saveName = saveName + '_fold_' + str(args.idx_fold) + '_seed_' + str(args.seed)
-        return saveName
-
-    else:
-        ## old style
-        saveName = '_'
-        if args.augmented:
-            saveName = saveName + '_aug'
-        if args.mci:
-            saveName = saveName + '_mci'
-            if args.mci_balanced:
-                saveName = saveName + '_balanced'
-        if args.pgd != 0:
-            saveName = saveName + '_pgd_' + str(args.pgd)
-        if args.minmax:
-            saveName = saveName + '_mm'
-        saveName = saveName + '_fold_' + str(args.idx_fold) + '_seed_' + str(args.seed)
-        return saveName
-
+    saveName = ''
+    if args.augmented:
+        saveName = saveName + '_aug'
+    if args.mci:
+        saveName = saveName + '_mci'
+        if args.mci_balanced:
+            saveName = saveName + '_balanced'
+    if args.pgd != 0:
+        saveName = saveName + '_pgd_' + str(args.pgd)
+    if args.minmax:
+        saveName = saveName + '_mm'
+    saveName = saveName + '_fold_' + str(args.idx_fold) + '_seed_' + str(args.seed)
+    return saveName
 
 def train(args):
     num_classes = 2
@@ -203,8 +226,6 @@ def train(args):
     @tf.function
     def train_step(x, y):
         with tf.GradientTape() as tape:
-            # embedding = model_encoder(x, training=True)
-            # logits = model_decoder(embedding, training=True)
             logits = model(x, training=True)
             loss_value = loss_fn(y, logits)
 
@@ -217,8 +238,6 @@ def train(args):
 
     @tf.function
     def test_step(x, y):
-        # embedding = model_encoder(x, training=False)
-        # val_logits = model_decoder(embedding, training=False)
         val_logits = model(x, training=False)
         val_acc_metric.update_state(y, val_logits)
 
@@ -305,8 +324,6 @@ def evaluate_crossDataSet(args):
 
     @tf.function
     def test_step(x, y):
-        # embedding = model_encoder(x, training=False)
-        # val_logits = model_decoder(embedding, training=False)
         val_logits = model(x, training=False)
         val_acc_metric.update_state(y, val_logits)
 
@@ -315,10 +332,7 @@ def evaluate_crossDataSet(args):
     total_step_test_MIRIAD = math.ceil(len(MIRIAD_testData) / args.batch_size)
     total_step_test_OASIS3 = math.ceil(len(OASIS3_testData) / args.batch_size)
 
-    if args.weights_folder != 'weights_regular_training':
-        model.load_weights('weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
-    else:
-        model.load_weights('weights/' + args.weights_folder + '/weights' + getSaveName(args) + str(args.continueEpoch))
+    model.load_weights('weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
     print ('Testing Start ...')
 
