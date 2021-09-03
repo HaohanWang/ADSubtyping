@@ -6,8 +6,8 @@ import sys
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import tensorflow as tf
-from tensorflow import keras
 from tensorflow.keras import losses, optimizers, metrics, layers
+from tensorflow_addons.metrics import F1Score
 
 import numpy as np
 import time
@@ -321,11 +321,13 @@ def evaluate_crossDataSet(args):
     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
 
     val_acc_metric = metrics.CategoricalAccuracy()
+    val_f1_metric = F1Score(num_classes=2)
 
     @tf.function
     def test_step(x, y):
         val_logits = model(x, training=False)
         val_acc_metric.update_state(y, val_logits)
+        val_f1_metric.update_state(y, val_logits)
 
     total_step_test_ADNI = math.ceil(len(ADNI_testData) / args.batch_size)
     total_step_test_AIBL = math.ceil(len(AIBL_testData) / args.batch_size)
@@ -340,29 +342,41 @@ def evaluate_crossDataSet(args):
         images, labels = ADNI_testData[i]
         test_step(images, labels)
     val_acc = val_acc_metric.result()
+    val_f1 = val_f1_metric.result()[1]
     val_acc_metric.reset_states()
+    val_f1_metric.reset_states()
     print("\tADNI Test acc: %.4f" % (float(val_acc),))
+    print("\tADNI Test F1: %.4f" % (float(val_f1),))
 
     for i in range(total_step_test_AIBL):
         images, labels = AIBL_testData[i]
         test_step(images, labels)
     val_acc = val_acc_metric.result()
+    val_f1 = val_f1_metric.result()
     val_acc_metric.reset_states()
+    val_f1_metric.reset_states()
     print("\tAIBL Test acc: %.4f" % (float(val_acc),))
+    print("\tAIBL Test F1: %.4f" % (float(val_f1),))
 
     for i in range(total_step_test_MIRIAD):
         images, labels = MIRIAD_testData[i]
         test_step(images, labels)
     val_acc = val_acc_metric.result()
+    val_f1 = val_f1_metric.result()
     val_acc_metric.reset_states()
+    val_f1_metric.reset_states()
     print("\tMIRIAD Test acc: %.4f" % (float(val_acc),))
+    print("\tMIRIAD Test F1: %.4f" % (float(val_f1),))
 
     for i in range(total_step_test_OASIS3):
         images, labels = OASIS3_testData[i]
         test_step(images, labels)
     val_acc = val_acc_metric.result()
+    val_f1 = val_f1_metric.result()
     val_acc_metric.reset_states()
+    val_f1_metric.reset_states()
     print("\tOASIS3 Test acc: %.4f" % (float(val_acc),))
+    print("\tOASIS3 Test F1: %.4f" % (float(val_f1),))
 
     sys.stdout.flush()
 
