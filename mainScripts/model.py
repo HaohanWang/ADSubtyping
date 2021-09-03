@@ -352,7 +352,7 @@ def evaluate_crossDataSet(args):
         images, labels = AIBL_testData[i]
         test_step(images, labels)
     val_acc = val_acc_metric.result()
-    val_f1 = val_f1_metric.result()
+    val_f1 = val_f1_metric.result()[1]
     val_acc_metric.reset_states()
     val_f1_metric.reset_states()
     print("\tAIBL Test acc: %.4f" % (float(val_acc),))
@@ -362,7 +362,7 @@ def evaluate_crossDataSet(args):
         images, labels = MIRIAD_testData[i]
         test_step(images, labels)
     val_acc = val_acc_metric.result()
-    val_f1 = val_f1_metric.result()
+    val_f1 = val_f1_metric.result()[1]
     val_acc_metric.reset_states()
     val_f1_metric.reset_states()
     print("\tMIRIAD Test acc: %.4f" % (float(val_acc),))
@@ -372,7 +372,7 @@ def evaluate_crossDataSet(args):
         images, labels = OASIS3_testData[i]
         test_step(images, labels)
     val_acc = val_acc_metric.result()
-    val_f1 = val_f1_metric.result()
+    val_f1 = val_f1_metric.result()[1]
     val_acc_metric.reset_states()
     val_f1_metric.reset_states()
     print("\tOASIS3 Test acc: %.4f" % (float(val_acc),))
