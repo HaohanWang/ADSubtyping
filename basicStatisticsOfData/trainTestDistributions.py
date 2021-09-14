@@ -110,6 +110,7 @@ if __name__ == '__main__':
     # checkMajorityPredictionAccuracy(csvFile=csvFile4)
 
     checkAgeGenderDistributionOfLabels(csvFile=csvFile1, onlyTraining=True)
+    # so it seems there are dependencies between both age and gender and the diagnosis in the training data
     checkAgeGenderDistributionOfLabels(csvFile=csvFile2)
     checkAgeGenderDistributionOfLabels(csvFile=csvFile3)
     checkAgeGenderDistributionOfLabels(csvFile=csvFile4)
