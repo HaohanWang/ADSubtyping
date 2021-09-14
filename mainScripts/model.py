@@ -196,7 +196,7 @@ def getSaveName(args):
 def train(args):
     num_classes = 2
 
-    ## todo: make some fake training data with holes in brain
+    ## todo: augment some data that are simple to classify at the beginning
 
     ## todo: let's reorder the samples with age information
 
