@@ -156,8 +156,9 @@ class MRIDataGenerator(keras.utils.Sequence):
                 images[i + self.batch_size_CN + self.batch_size_AD,:,:,:,0] = self._load_one_image(self.filePaths_AD[idxlist_MCI[i]])
 
                 if self.MCI_included_as_soft_label:
-                    labels[i + self.batch_size_CN + self.batch_size_AD, 0] = 0.25
-                    labels[i + self.batch_size_CN + self.batch_size_AD, 1] = 0.75
+                    t = np.random.random()
+                    labels[i + self.batch_size_CN + self.batch_size_AD, 0] = t
+                    labels[i + self.batch_size_CN + self.batch_size_AD, 1] = 1 - t
                 else:
                     labels[i + self.batch_size_CN + self.batch_size_AD, 1] = 1
 

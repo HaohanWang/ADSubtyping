@@ -20,21 +20,21 @@ def multiRegression():
 
     xtr, xte = trainTestSplit(snpData)
 
-    print np.mean(mriData), np.std(mriData)
+    print (np.mean(mriData), np.std(mriData))
 
     model = Lasso()
 
     for i in range(mriData.shape[1]):
-        print 'target', i,
+        print ('target', i,)
         ytr, yte = trainTestSplit(mriData[:, i])
 
         model.fit(xtr, ytr)
         ypred = model.predict(xte)
-        print '\t test mse', mse(yte, ypred)
-        print '-------------------'
-        print yte.T
-        print ypred.T
-        print '-------------------'
+        # print '\t test mse', mse(yte, ypred)
+        # print '-------------------'
+        # print yte.T
+        # print ypred.T
+        # print '-------------------'
 
 def multiAssociationStudy():
     mriData = np.load('../data/multiRegression/mriData.npy')*100
@@ -47,15 +47,15 @@ def multiAssociationStudy():
     S, U = linalg.eigh(K)
 
     for i in range(mriData.shape[1]):
-        print 'target', i, 'markers',
+        print ('target', i, 'markers',)
 
         lmm.fit(X=X, K=K, Kva=S, Kve=U, y=mriData[:, i])
         pValue = lmm.getPvalues()
         idx = np.argsort(pValue)
         for t in range(10):
-            print '\t', markers[idx[t]],
+            print ('\t', markers[idx[t]],)
 
-        print
+        print ()
 
 if __name__ == '__main__':
     pass

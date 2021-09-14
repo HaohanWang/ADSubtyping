@@ -198,6 +198,8 @@ def train(args):
 
     ## todo: make some fake training data with holes in brain
 
+    ## todo: let's reorder the samples with age information
+
     trainData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
                                  split='train',
                                  batchSize=args.batch_size,
@@ -259,15 +261,17 @@ def train(args):
             images, labels = trainData[i]
 
             if args.pgd != 0:
-                images += np.random.random(size=images.shape) * args.pgd
-                grad = model.calculateGradients(images, labels)
+                # todo: what's the visual difference between an AD and a normal (what are the differences we need)
 
-                images += args.pgd * np.sign(grad)
+                images += (np.random.random(size=images.shape)*2 - 1) * args.pgd
+                for pgd_index in range(5):
+                    grad = model.calculateGradients(images, labels)
+                    images += (args.pgd/5) * np.sign(grad)
 
-                images = np.clip(images,
-                                 images - args.pgd,
-                                 images + args.pgd)
-                images = np.clip(images, 0, 1)  # ensure valid pixel range
+                    images = np.clip(images,
+                                     images - args.pgd,
+                                     images + args.pgd)
+                    images = np.clip(images, 0, 1)  # ensure valid pixel range
 
             loss_value = train_step(images, labels)
             train_acc = train_acc_metric.result()
@@ -302,6 +306,9 @@ def train(args):
         model.save_weights('weights/weights' + getSaveName(args) + '_epoch_' + str(epoch))
 
 def evaluate_crossDataSet(args):
+
+    # todo: let's evaluate the performances based on different demographic information
+
     num_classes = 2
 
     ADNI_testData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
@@ -399,7 +406,7 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--continueEpoch', type=int, default=0, help='continue from current epoch')
     parser.add_argument('-p', '--pgd', type=float, default=0, help='whether we use pgd (actually fast fgsm)')
     parser.add_argument('-n', '--minmax', type=int, default=0, help='whether we use min max pooling')
-    parser.add_argument('-f', '--weights_folder', type=str, default='', help='the folder weights are saved')
+    parser.add_argument('-f', '--weights_folder', type=str, default='.', help='the folder weights are saved')
 
 
     args = parser.parse_args()

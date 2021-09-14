@@ -9,7 +9,7 @@ from os.path import join
 def visualizeDataAndLowRankData(subj, sess, trainFlag):
     data = loadNPYFile(subj, sess, trainFlag)
 
-    print data.shape
+    print (data.shape)
 
     out = sess + '.html'
     outpath = join('visualizedResults/', out)

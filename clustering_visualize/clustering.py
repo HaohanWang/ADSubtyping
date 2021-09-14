@@ -107,7 +107,7 @@ def raw_dist_clustering():
         else:
             d.append(1)
     d = np.array(d)
-    print len(labels), np.mean(d)
+    print (len(labels), np.mean(d))
 
     dist = np.load('raw_dist.npy')
 
