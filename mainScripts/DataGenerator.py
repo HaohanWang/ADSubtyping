@@ -25,8 +25,10 @@ class MRIDataGenerator(keras.utils.Sequence):
                  n_channels=1,
                  n_classes=2,
                  augmented = True,
+                 augmented_fancy = False,
                  MCI_included=False,
-                 MCI_included_as_soft_label=False
+                 MCI_included_as_soft_label=False,
+                 returnSubjectID = False
                  ):
         # 'Initialization'
 
@@ -40,8 +42,10 @@ class MRIDataGenerator(keras.utils.Sequence):
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.augmented = augmented
+        self.augmented_fancy = augmented_fancy
         self.MCI_included = MCI_included
         self.MCI_included_as_soft_label = MCI_included_as_soft_label
+        self.returnSubjectID = returnSubjectID
 
         self.parse_csv_file()
         self._get_batch_split()
@@ -57,10 +61,17 @@ class MRIDataGenerator(keras.utils.Sequence):
         if self.split == 'train':
             images, labels = self._load_batch_image_train(idx)
             if self.augmented:
+                if self.augmented_fancy:
+                    images = self.dataAugmentation.augmentData_batch_withLabel(images, labels)
                 images = self.dataAugmentation.augmentData_batch(images)
+            return images, labels
         else:
-            images, labels = self._load_batch_image_test(idx)
-        return images, labels
+            if self.returnSubjectID:
+                images, labels, subjectLists = self._load_batch_image_test(idx)
+                return images, labels, subjectLists
+            else:
+                images, labels = self._load_batch_image_test(idx)
+                return images, labels
 
     def parse_csv_file(self):
         csv_path = join(self.img_dir, f'split.pretrained.{self.idx_fold}.csv')
@@ -71,6 +82,9 @@ class MRIDataGenerator(keras.utils.Sequence):
         label_CN = []
         self.filePaths_MCI = []
         label_MCI = []
+        subject_AD = []
+        subject_CN = []
+        subject_MCI = []
         for line in text[1:]:
             items = line.split(',')
             if items[-1] == self.split:
@@ -82,20 +96,25 @@ class MRIDataGenerator(keras.utils.Sequence):
                 if items[-2] == 'AD':
                     self.filePaths_AD.append(image_path)
                     label_AD.append(1)
+                    subject_AD.append(items[0])
                 elif items[-2] == 'CN':
                     self.filePaths_CN.append(image_path)
                     label_CN.append(0)
+                    subject_CN.append(items[0])
                 elif items[-2] == 'MCI':
                     self.filePaths_MCI.append(image_path)
                     label_MCI.append(1)
+                    subject_MCI.append(items[0])
 
         if not (self.split == 'train'):
             if self.MCI_included:
                 self.filePaths_test = self.filePaths_AD + self.filePaths_CN + self.filePaths_MCI
                 self.labels_test = label_AD + label_CN + label_MCI
+                self.subjects_test = subject_AD + subject_CN + subject_MCI
             else:
                 self.filePaths_test = self.filePaths_AD + self.filePaths_CN
                 self.labels_test = label_AD + label_CN
+                self.subjects_test = subject_AD + subject_CN
 
         self.totalLength = len(self.filePaths_AD) + len(self.filePaths_CN) + len(self.filePaths_MCI) * self.MCI_included
 
@@ -171,11 +190,16 @@ class MRIDataGenerator(keras.utils.Sequence):
         images = np.zeros((self.batch_size, *self.dim, self.n_channels)).astype(np.float32)
         labels = np.zeros((self.batch_size))
 
+        subjectList = []
         for i in range(self.batch_size):
             images[i,:,:,:,0] = self._load_one_image(self.filePaths_test[idxlist[i]])
             labels[i] = self.labels_test[idxlist[i]]
+            subjectList.append(self.subjects_test[idxlist[i]])
 
-        return images, tf.one_hot(labels, self.n_classes)
+        if self.returnSubjectID:
+            return images, tf.one_hot(labels, self.n_classes), subjectList
+        else:
+            return images, tf.one_hot(labels, self.n_classes)
 
 class MRIDataGenerator_Simple(keras.utils.Sequence):
     'Generates data for Keras'
@@ -186,6 +210,7 @@ class MRIDataGenerator_Simple(keras.utils.Sequence):
                  dim=(169, 208, 179),
                  n_channels=1,
                  n_classes=2,
+                 returnSubjectID = False
                  ):
         # 'Initialization'
 
@@ -195,6 +220,7 @@ class MRIDataGenerator_Simple(keras.utils.Sequence):
         self.dim = dim
         self.n_channels = n_channels
         self.n_classes = n_classes
+        self.returnSubjectID = returnSubjectID
 
         self.diagIndex = -1
         if self.img_dir.find('OASIS') != -1:
@@ -209,14 +235,19 @@ class MRIDataGenerator_Simple(keras.utils.Sequence):
         return self.totalLength
 
     def __getitem__(self, idx):
-        images, labels = self._load_batch_image_test(idx)
-        return images, labels
+        if self.returnSubjectID:
+            images, labels, subjects = self._load_batch_image_test(idx)
+            return images, labels, subjects
+        else:
+            images, labels = self._load_batch_image_test(idx)
+            return images, labels
 
     def parse_csv_file(self):
         csv_path = join(self.img_dir, self.csv_path)
         text = [line.strip() for line in open(csv_path)]
         self.filePaths_test = []
         self.labels_test = []
+        self.subjects_test = []
 
         for line in text[1:]:
             items = line.split(',')
@@ -225,9 +256,11 @@ class MRIDataGenerator_Simple(keras.utils.Sequence):
             if items[self.diagIndex] == 'AD':
                 self.labels_test.append(1)
                 self.filePaths_test.append(image_path)
+                self.subjects_test.append(items[0])
             elif items[self.diagIndex] == 'CN':
                 self.labels_test.append(0)
                 self.filePaths_test.append(image_path)
+                self.subjects_test.append(items[0])
 
         self.totalLength = len(self.filePaths_test)
 
@@ -253,8 +286,13 @@ class MRIDataGenerator_Simple(keras.utils.Sequence):
         images = np.zeros((self.batch_size, *self.dim, self.n_channels)).astype(np.float32)
         labels = np.zeros((self.batch_size))
 
+        subjectList = []
         for i in range(self.batch_size):
             images[i,:,:,:,0] = self._load_one_image(self.filePaths_test[idxlist[i]])
             labels[i] = self.labels_test[idxlist[i]]
+            subjectList.append(self.subjects_test[idxlist[i]])
 
-        return images, tf.one_hot(labels, self.n_classes)
+        if self.returnSubjectID:
+            return images, tf.one_hot(labels, self.n_classes), subjectList
+        else:
+            return images, tf.one_hot(labels, self.n_classes)

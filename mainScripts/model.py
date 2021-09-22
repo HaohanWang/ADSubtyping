@@ -182,6 +182,8 @@ def getSaveName(args):
     saveName = ''
     if args.augmented:
         saveName = saveName + '_aug'
+        if args.augmented_fancy:
+            saveName = saveName + '_fancy'
     if args.mci:
         saveName = saveName + '_mci'
         if args.mci_balanced:
@@ -206,7 +208,8 @@ def train(args):
                                  MCI_included=args.mci,
                                  MCI_included_as_soft_label=args.mci_balanced,
                                  idx_fold=args.idx_fold,
-                                 augmented=args.augmented)
+                                 augmented=args.augmented,
+                                 augmented_fancy = args.augmented_fancy)
 
     validationData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
                                       batchSize=args.batch_size,
@@ -307,8 +310,6 @@ def train(args):
 
 def evaluate_crossDataSet(args):
 
-    # todo: let's evaluate the performances based on different demographic information
-
     num_classes = 2
 
     ADNI_testData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
@@ -387,6 +388,173 @@ def evaluate_crossDataSet(args):
 
     sys.stdout.flush()
 
+def evaluate_crossDataSet_at_individual(args):
+
+    def writeOutResults(dataset, prediction, subjectIDs):
+        info = {}
+        if dataset == 'ADNI':
+            tmp = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS/split.pretrained.0.csv')]
+            for line in tmp:
+                if line.find('test') != -1:
+                    items = line.split(',')
+                    info[items[0]] = line
+
+        elif dataset == 'AIBL':
+            text = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS/aibl_info.csv')]
+            for line in text:
+                items = line.split(',')
+                info[items[0]] = line
+
+        elif dataset == 'MIRIAD':
+            text = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS/miriad_test_info.csv')]
+            for line in text:
+                items = line.split(',')
+                info[items[0]] = line
+
+        elif dataset == 'OASIS3':
+            text = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS/oasis3_test_info_2.csv')]
+            for line in text:
+                items = line.split(',')
+                info[items[0]] = line
+
+
+        f = open('predictionResults/result' + getSaveName(args) + '_epoch_' + str(args.continueEpoch) +'_'+ dataset + '.csv', 'w')
+        pl = prediction.tolist()
+        for i in range(len(pl)):
+            line = info[subjectIDs[i]]
+            f.writelines(line + ',')
+            if pl[i] == 0:
+                f.writelines('CN\n')
+            else:
+                f.writelines('AD\n')
+        f.close()
+
+    tf.config.run_functions_eagerly(True)
+
+    num_classes = 2
+
+    ADNI_testData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+                                     batchSize=args.batch_size,
+                                     idx_fold=args.idx_fold,
+                                     split='test',
+                                     returnSubjectID=True)
+
+    AIBL_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS',
+                                            'aibl_info.csv', batchSize=args.batch_size, returnSubjectID=True)
+
+    MIRIAD_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS',
+                                              'miriad_test_info.csv', batchSize=args.batch_size, returnSubjectID=True)
+
+    OASIS3_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS',
+                                              'oasis3_test_info_2.csv', batchSize=args.batch_size, returnSubjectID=True)
+
+    model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+
+    val_acc_metric = metrics.CategoricalAccuracy()
+    val_f1_metric = F1Score(num_classes=2)
+
+    @tf.function
+    def test_step(x, y):
+        val_logits = model(x, training=False)
+        val_acc_metric.update_state(y, val_logits)
+        val_f1_metric.update_state(y, val_logits)
+        return tf.math.argmax(val_logits, 1).numpy()
+
+    total_step_test_ADNI = math.ceil(len(ADNI_testData) / args.batch_size)
+    total_step_test_AIBL = math.ceil(len(AIBL_testData) / args.batch_size)
+    total_step_test_MIRIAD = math.ceil(len(MIRIAD_testData) / args.batch_size)
+    total_step_test_OASIS3 = math.ceil(len(OASIS3_testData) / args.batch_size)
+
+    model.load_weights('weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+
+    print ('Testing Start ...')
+
+    prediction = None
+    subjectIDs = []
+
+    for i in range(total_step_test_ADNI):
+        images, labels, subjects = ADNI_testData[i]
+        prediction_tmp = test_step(images, labels)
+        if prediction is None:
+            prediction = prediction_tmp
+        else:
+            prediction = np.append(prediction, prediction_tmp)
+        subjectIDs.extend(subjects)
+
+    val_acc = val_acc_metric.result()
+    val_f1 = val_f1_metric.result()[1]
+    val_acc_metric.reset_states()
+    val_f1_metric.reset_states()
+    print("\tADNI Test acc: %.4f" % (float(val_acc),))
+    print("\tADNI Test F1: %.4f" % (float(val_f1),))
+
+    writeOutResults('ADNI', prediction, subjectIDs)
+
+    prediction = None
+    subjectIDs = []
+
+    for i in range(total_step_test_AIBL):
+        images, labels, subjects = AIBL_testData[i]
+        prediction_tmp = test_step(images, labels)
+        if prediction is None:
+            prediction = prediction_tmp
+        else:
+            prediction = np.append(prediction, prediction_tmp)
+        subjectIDs.extend(subjects)
+
+    val_acc = val_acc_metric.result()
+    val_f1 = val_f1_metric.result()[1]
+    val_acc_metric.reset_states()
+    val_f1_metric.reset_states()
+    print("\tAIBL Test acc: %.4f" % (float(val_acc),))
+    print("\tAIBL Test F1: %.4f" % (float(val_f1),))
+
+    writeOutResults('AIBL', prediction, subjectIDs)
+
+    prediction = None
+    subjectIDs = []
+
+    for i in range(total_step_test_MIRIAD):
+        images, labels, subjects = MIRIAD_testData[i]
+        prediction_tmp = test_step(images, labels)
+        if prediction is None:
+            prediction = prediction_tmp
+        else:
+            prediction = np.append(prediction, prediction_tmp)
+        subjectIDs.extend(subjects)
+
+    val_acc = val_acc_metric.result()
+    val_f1 = val_f1_metric.result()[1]
+    val_acc_metric.reset_states()
+    val_f1_metric.reset_states()
+    print("\tMIRIAD Test acc: %.4f" % (float(val_acc),))
+    print("\tMIRIAD Test F1: %.4f" % (float(val_f1),))
+
+    writeOutResults('MIRIAD', prediction, subjectIDs)
+
+    prediction = None
+    subjectIDs = []
+
+    for i in range(total_step_test_OASIS3):
+        images, labels, subjects = OASIS3_testData[i]
+        prediction_tmp = test_step(images, labels)
+        if prediction is None:
+            prediction = prediction_tmp
+        else:
+            prediction = np.append(prediction, prediction_tmp)
+        subjectIDs.extend(subjects)
+
+    val_acc = val_acc_metric.result()
+    val_f1 = val_f1_metric.result()[1]
+    val_acc_metric.reset_states()
+    val_f1_metric.reset_states()
+    print("\tOASIS3 Test acc: %.4f" % (float(val_acc),))
+    print("\tOASIS3 Test F1: %.4f" % (float(val_f1),))
+
+    writeOutResults('OASIS3', prediction, subjectIDs)
+
+    sys.stdout.flush()
+
 def main(args):
     train(args)
 
@@ -400,6 +568,7 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--seed', type=int, default=1, help='random seed')
     parser.add_argument('-i', '--idx_fold', type=int, default=0, help='which partition of data to use')
     parser.add_argument('-u', '--augmented', type=int, default=0, help='whether use augmentation or not')
+    parser.add_argument('-g', '--augmented_fancy', type=int, default=0, help='whether use the fancy, Alzheimer specific augmentation or not')
     parser.add_argument('-m', '--mci', type=int, default=0, help='whether use MCI data or not')
     parser.add_argument('-l', '--mci_balanced', type=int, default=0,
                         help='when using MCI, whether including it as a balanced data')
@@ -421,3 +590,5 @@ if __name__ == "__main__":
         main(args)
     elif args.action == 1:
         evaluate_crossDataSet(args)
+    elif args.action == 2:
+        evaluate_crossDataSet_at_individual(args)

@@ -3,6 +3,8 @@ __author__ = 'Haohan Wang'
 from scipy.ndimage import rotate, interpolation
 import numpy as np
 
+from scipy.ndimage.morphology import grey_erosion, grey_dilation
+
 
 class MRIDataAugmentation():
     def __init__(self, imgShape, augProb):
@@ -12,6 +14,20 @@ class MRIDataAugmentation():
         self.augProb = augProb
 
         self.funcs_pool = [self.rotate_img, self.scale_img, self.translate_img]
+
+    def augmentData_batch_withLabel(self, imgs, labels):
+        for i in range(imgs.shape[0]):
+            imgs[i,:,:,:,0] = self.augmentData_single_withLabel(imgs[i,:,:,:,0], labels[i])
+        return imgs
+
+    def augmentData_single_withLabel(self, img, label):
+        if np.random.random() > 0.5:
+            c = np.random.randint(2, 5)
+            if label[0] == 1:
+                return grey_dilation(img, size=(c, c, c))
+            elif label[1] == 1:
+                return grey_erosion(img, size=(c, c, c))
+        return img
 
     def augmentData_batch(self, imgs):
         for i in range(imgs.shape[0]):

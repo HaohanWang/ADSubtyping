@@ -98,6 +98,13 @@ def checkAgeGenderDistributionOfLabels(csvFile, onlyTraining = False):
     print ('age', p_age)
     print ('gender', p_gender)
 
+    from matplotlib import pyplot as plt
+
+    plt.scatter(ages, diags, color='r')
+    plt.show()
+    plt.scatter(genders, diags, color='b')
+    plt.show()
+
 if __name__ == '__main__':
     csvFile1 = '/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS/split.pretrained.0.csv'
     csvFile2 = '/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS/aibl_info.csv'
@@ -111,6 +118,6 @@ if __name__ == '__main__':
 
     checkAgeGenderDistributionOfLabels(csvFile=csvFile1, onlyTraining=True)
     # so it seems there are dependencies between both age and gender and the diagnosis in the training data
-    checkAgeGenderDistributionOfLabels(csvFile=csvFile2)
-    checkAgeGenderDistributionOfLabels(csvFile=csvFile3)
-    checkAgeGenderDistributionOfLabels(csvFile=csvFile4)
+    # checkAgeGenderDistributionOfLabels(csvFile=csvFile2)
+    # checkAgeGenderDistributionOfLabels(csvFile=csvFile3)
+    # checkAgeGenderDistributionOfLabels(csvFile=csvFile4)

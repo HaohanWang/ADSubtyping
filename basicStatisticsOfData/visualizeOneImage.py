@@ -33,8 +33,8 @@ if __name__ == '__main__':
 
     data1 = loadOneSample_subject_session('sub-ADNI021S0332', 'ses-M00') # this is an AD case
 
-    data1_1 = grey_dilation(data1, size=(2, 2, 2))
-    data1_2 = grey_erosion(data1, size=(2, 2, 2))
+    data1_1 = grey_dilation(data1, size=(4, 4, 4))
+    data1_2 = grey_erosion(data1, size=(4, 4, 4))
 
     # print (np.mean(data1))
     # print (np.max(data1))
@@ -69,8 +69,8 @@ if __name__ == '__main__':
 
     data2 = loadOneSample_subject_session('sub-ADNI029S0824', 'ses-M84')
 
-    data2_1 = grey_dilation(data2, size=(2, 2, 2))
-    data2_2 = grey_erosion(data2, size=(2, 2, 2))
+    data2_1 = grey_dilation(data2, size=(5, 5, 5))
+    data2_2 = grey_erosion(data2, size=(5, 5, 5))
 
     # print (np.mean(data2))
     # print (np.max(data2))
