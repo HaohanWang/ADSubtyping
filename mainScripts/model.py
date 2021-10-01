@@ -16,6 +16,7 @@ import json
 import argparse
 
 from DataGenerator import MRIDataGenerator, MRIDataGenerator_Simple
+from SaliencyMapGenerator import SaliencyMapGenerator
 
 
 class minMaxPool(tf.keras.layers.Layer):
@@ -171,9 +172,9 @@ class MRIImaging3DConvModel(tf.keras.Model):
             tape.watch(x)
             prediction = self(x, training=False)
             loss = losses.CategoricalCrossentropy(from_logits=True)(y, prediction)
-
             # Get the gradients of the loss w.r.t to the input image.
         gradient = tape.gradient(loss, x)
+
         return gradient
 
 
@@ -553,6 +554,10 @@ def evaluate_crossDataSet_at_individual(args):
 
     writeOutResults('OASIS3', prediction, subjectIDs)
 
+    # usage of saliency map generator
+    # smap_generator = SaliencyMapGenerator(model)
+    # smap_generator.generate(ADNI_testData, total_step_test_ADNI, "/your_local_mounted_dir/", True)
+
     sys.stdout.flush()
 
 def main(args):
@@ -576,7 +581,7 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--pgd', type=float, default=0, help='whether we use pgd (actually fast fgsm)')
     parser.add_argument('-n', '--minmax', type=int, default=0, help='whether we use min max pooling')
     parser.add_argument('-f', '--weights_folder', type=str, default='.', help='the folder weights are saved')
-
+    parser.add_argument('-sm', '--saliency_map_type', type=str, default="", help='whether we generate a saliency for the given dataset')
 
     args = parser.parse_args()
 
