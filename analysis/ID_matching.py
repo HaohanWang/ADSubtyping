@@ -13,8 +13,8 @@ def id_check():
     for line in text2:
         id2.append(line.replace('_',''))
 
-    print len(id1)
-    print len(id2)
+    print (len(id1))
+    print (len(id2))
 
     l = []
     for m in id2:
@@ -23,7 +23,7 @@ def id_check():
 
     l = set(l)
 
-    print len(l)
+    print (len(l))
 
 if __name__ == '__main__':
     id_check()
