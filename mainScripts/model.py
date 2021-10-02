@@ -152,6 +152,32 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = self.classifier(x)
         return x
 
+    def extract_embedding(self, inputs):
+        x = self.conv1(inputs)
+        x = self.bn1(x)
+        x = tf.nn.relu(x)
+        x = self.pool1(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = tf.nn.relu(x)
+        x = self.pool2(x)
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = tf.nn.relu(x)
+        x = self.pool3(x)
+        x = self.conv4(x)
+        x = self.bn4(x)
+        x = tf.nn.relu(x)
+        x = self.pool4(x)
+        x = self.conv5(x)
+        x = self.bn5(x)
+        x = tf.nn.relu(x)
+        x = self.pool5(x)
+        x = self.gap(x)
+        x = self.dp(x)
+        x = self.dense1(x)  # the representation with 1024 values
+        return x
+
     def setConvWeights(self, c):
         w = np.load(self.weights_folder + 'features.' + str(c) + '.weight.npy').astype(np.float32)
         b = np.load(self.weights_folder + 'features.' + str(c) + '.bias.npy').astype(np.float32)
@@ -390,38 +416,38 @@ def evaluate_crossDataSet(args):
 
 def evaluate_crossDataSet_at_individual(args):
 
-    def writeOutResults(dataset, prediction, subjectIDs):
+    def writeOutResults(dataset, prediction, subjectIDs, sessionIDs):
         info = {}
         if dataset == 'ADNI':
             tmp = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS/split.pretrained.0.csv')]
             for line in tmp:
                 if line.find('test') != -1:
                     items = line.split(',')
-                    info[items[0]] = line
+                    info[items[0] + '#' + items[1]] = line
 
         elif dataset == 'AIBL':
             text = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS/aibl_info.csv')]
             for line in text:
                 items = line.split(',')
-                info[items[0]] = line
+                info[items[0] + '#' + items[1]] = line
 
         elif dataset == 'MIRIAD':
             text = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS/miriad_test_info.csv')]
             for line in text:
                 items = line.split(',')
-                info[items[0]] = line
+                info[items[0] + '#' + items[1]] = line
 
         elif dataset == 'OASIS3':
             text = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS/oasis3_test_info_2.csv')]
             for line in text:
                 items = line.split(',')
-                info[items[0]] = line
+                info[items[0] + '#' + items[1]] = line
 
 
         f = open('predictionResults/result' + getSaveName(args) + '_epoch_' + str(args.continueEpoch) +'_'+ dataset + '.csv', 'w')
         pl = prediction.tolist()
         for i in range(len(pl)):
-            line = info[subjectIDs[i]]
+            line = info[subjectIDs[i] + '#' + sessionIDs[i]]
             f.writelines(line + ',')
             if pl[i] == 0:
                 f.writelines('CN\n')
@@ -471,15 +497,17 @@ def evaluate_crossDataSet_at_individual(args):
 
     prediction = None
     subjectIDs = []
+    sessionIDs = []
 
     for i in range(total_step_test_ADNI):
-        images, labels, subjects = ADNI_testData[i]
+        images, labels, subjects, sessions = ADNI_testData[i]
         prediction_tmp = test_step(images, labels)
         if prediction is None:
             prediction = prediction_tmp
         else:
             prediction = np.append(prediction, prediction_tmp)
         subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
 
     val_acc = val_acc_metric.result()
     val_f1 = val_f1_metric.result()[1]
@@ -488,19 +516,21 @@ def evaluate_crossDataSet_at_individual(args):
     print("\tADNI Test acc: %.4f" % (float(val_acc),))
     print("\tADNI Test F1: %.4f" % (float(val_f1),))
 
-    writeOutResults('ADNI', prediction, subjectIDs)
+    writeOutResults('ADNI', prediction, subjectIDs, sessionIDs)
 
     prediction = None
     subjectIDs = []
+    sessionIDs = []
 
     for i in range(total_step_test_AIBL):
-        images, labels, subjects = AIBL_testData[i]
+        images, labels, subjects, sessions = AIBL_testData[i]
         prediction_tmp = test_step(images, labels)
         if prediction is None:
             prediction = prediction_tmp
         else:
             prediction = np.append(prediction, prediction_tmp)
         subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
 
     val_acc = val_acc_metric.result()
     val_f1 = val_f1_metric.result()[1]
@@ -509,19 +539,21 @@ def evaluate_crossDataSet_at_individual(args):
     print("\tAIBL Test acc: %.4f" % (float(val_acc),))
     print("\tAIBL Test F1: %.4f" % (float(val_f1),))
 
-    writeOutResults('AIBL', prediction, subjectIDs)
+    writeOutResults('AIBL', prediction, subjectIDs, sessionIDs)
 
     prediction = None
     subjectIDs = []
+    sessionIDs = []
 
     for i in range(total_step_test_MIRIAD):
-        images, labels, subjects = MIRIAD_testData[i]
+        images, labels, subjects, sessions = MIRIAD_testData[i]
         prediction_tmp = test_step(images, labels)
         if prediction is None:
             prediction = prediction_tmp
         else:
             prediction = np.append(prediction, prediction_tmp)
         subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
 
     val_acc = val_acc_metric.result()
     val_f1 = val_f1_metric.result()[1]
@@ -530,19 +562,21 @@ def evaluate_crossDataSet_at_individual(args):
     print("\tMIRIAD Test acc: %.4f" % (float(val_acc),))
     print("\tMIRIAD Test F1: %.4f" % (float(val_f1),))
 
-    writeOutResults('MIRIAD', prediction, subjectIDs)
+    writeOutResults('MIRIAD', prediction, subjectIDs, sessionIDs)
 
     prediction = None
     subjectIDs = []
+    sessionIDs = []
 
     for i in range(total_step_test_OASIS3):
-        images, labels, subjects = OASIS3_testData[i]
+        images, labels, subjects, sessions = OASIS3_testData[i]
         prediction_tmp = test_step(images, labels)
         if prediction is None:
             prediction = prediction_tmp
         else:
             prediction = np.append(prediction, prediction_tmp)
         subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
 
     val_acc = val_acc_metric.result()
     val_f1 = val_f1_metric.result()[1]
@@ -551,7 +585,147 @@ def evaluate_crossDataSet_at_individual(args):
     print("\tOASIS3 Test acc: %.4f" % (float(val_acc),))
     print("\tOASIS3 Test F1: %.4f" % (float(val_f1),))
 
-    writeOutResults('OASIS3', prediction, subjectIDs)
+    writeOutResults('OASIS3', prediction, subjectIDs, sessionIDs)
+
+    sys.stdout.flush()
+
+def embedding_extractor(args):
+    def saveEmebddings(dataset, embedding, subjectIDs, sessionIDs):
+        info = {}
+        if dataset == 'ADNI':
+            tmp = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS/split.pretrained.0.csv')]
+            for line in tmp:
+                if line.find('test') != -1:
+                    items = line.split(',')
+                    info[items[0] + '#' + items[1]] = line
+
+        elif dataset == 'AIBL':
+            text = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS/aibl_info.csv')]
+            for line in text:
+                items = line.split(',')
+                info[items[0] + '#' + items[1]] = line
+
+        elif dataset == 'MIRIAD':
+            text = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS/miriad_test_info.csv')]
+            for line in text:
+                items = line.split(',')
+                info[items[0] + '#' + items[1]] = line
+
+        elif dataset == 'OASIS3':
+            text = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS/oasis3_test_info_2.csv')]
+            for line in text:
+                items = line.split(',')
+                info[items[0] + '#' + items[1]] = line
+
+
+        f = open('embeddingResult/result' + getSaveName(args) + '_epoch_' + str(args.continueEpoch) +'_'+ dataset + '.csv', 'w')
+
+        for i in range(len(subjectIDs)):
+            f.writelines(subjectIDs[i] + ',' + sessionIDs[i] + '\n')
+        f.close()
+
+        np.save('embeddingResult/result' + getSaveName(args) + '_epoch_' + str(args.continueEpoch) +'_'+ dataset + '.npy', embedding)
+
+
+    tf.config.run_functions_eagerly(True)
+
+    num_classes = 2
+
+    ADNI_testData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+                                     batchSize=args.batch_size,
+                                     idx_fold=args.idx_fold,
+                                     split='test',
+                                     returnSubjectID=True)
+
+    AIBL_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS',
+                                            'aibl_info.csv', batchSize=args.batch_size, returnSubjectID=True)
+
+    MIRIAD_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS',
+                                              'miriad_test_info.csv', batchSize=args.batch_size, returnSubjectID=True)
+
+    OASIS3_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS',
+                                              'oasis3_test_info_2.csv', batchSize=args.batch_size, returnSubjectID=True)
+
+    model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+
+
+    @tf.function
+    def extract_embedding(x):
+        embedding = model.extract_embedding(x)
+        return embedding.numpy()
+
+    total_step_test_ADNI = math.ceil(len(ADNI_testData) / args.batch_size)
+    total_step_test_AIBL = math.ceil(len(AIBL_testData) / args.batch_size)
+    total_step_test_MIRIAD = math.ceil(len(MIRIAD_testData) / args.batch_size)
+    total_step_test_OASIS3 = math.ceil(len(OASIS3_testData) / args.batch_size)
+
+    model.load_weights('weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+
+    print ('Testing Start ...')
+
+    embedding = None
+    subjectIDs = []
+    sessionIDs = []
+
+    for i in range(total_step_test_ADNI):
+        images, labels, subjects, sessions = ADNI_testData[i]
+        embedding_tmp = extract_embedding(images)
+        if embedding is None:
+            embedding = embedding_tmp
+        else:
+            embedding = np.append(embedding, embedding_tmp)
+        subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
+
+    saveEmebddings('ADNI', embedding, subjectIDs, sessionIDs)
+
+    embedding = None
+    subjectIDs = []
+    sessionIDs = []
+
+    for i in range(total_step_test_AIBL):
+        images, labels, subjects, sessions = AIBL_testData[i]
+        embedding_tmp = extract_embedding(images)
+        if embedding is None:
+            embedding = embedding_tmp
+        else:
+            embedding = np.append(embedding, embedding_tmp)
+        subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
+
+    saveEmebddings('AIBL', embedding, subjectIDs, sessionIDs)
+
+    embedding = None
+    subjectIDs = []
+    sessionIDs = []
+
+    for i in range(total_step_test_MIRIAD):
+        images, labels, subjects, sessions = MIRIAD_testData[i]
+        embedding_tmp = extract_embedding(images)
+        if embedding is None:
+            embedding = embedding_tmp
+        else:
+            embedding = np.append(embedding, embedding_tmp)
+        subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
+
+    saveEmebddings('MIRIAD', embedding, subjectIDs, sessionIDs)
+
+    embedding = None
+    subjectIDs = []
+    sessionIDs = []
+
+    for i in range(total_step_test_OASIS3):
+        images, labels, subjects, sessions = OASIS3_testData[i]
+        embedding_tmp = extract_embedding(images)
+        if embedding is None:
+            embedding = embedding_tmp
+        else:
+            embedding = np.append(embedding, embedding_tmp)
+        subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
+
+    saveEmebddings('OASIS3', embedding, subjectIDs, sessionIDs)
 
     sys.stdout.flush()
 
@@ -592,3 +766,5 @@ if __name__ == "__main__":
         evaluate_crossDataSet(args)
     elif args.action == 2:
         evaluate_crossDataSet_at_individual(args)
+    elif args.action == 3:
+        embedding_extractor(args)
