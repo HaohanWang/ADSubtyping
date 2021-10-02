@@ -673,7 +673,7 @@ def embedding_extractor(args):
         if embedding is None:
             embedding = embedding_tmp
         else:
-            embedding = np.append(embedding, embedding_tmp)
+            embedding = np.append(embedding, embedding_tmp, 0)
         subjectIDs.extend(subjects)
         sessionIDs.extend(sessions)
 
@@ -689,7 +689,7 @@ def embedding_extractor(args):
         if embedding is None:
             embedding = embedding_tmp
         else:
-            embedding = np.append(embedding, embedding_tmp)
+            embedding = np.append(embedding, embedding_tmp, 0)
         subjectIDs.extend(subjects)
         sessionIDs.extend(sessions)
 
@@ -705,7 +705,7 @@ def embedding_extractor(args):
         if embedding is None:
             embedding = embedding_tmp
         else:
-            embedding = np.append(embedding, embedding_tmp)
+            embedding = np.append(embedding, embedding_tmp, 0)
         subjectIDs.extend(subjects)
         sessionIDs.extend(sessions)
 
@@ -721,7 +721,7 @@ def embedding_extractor(args):
         if embedding is None:
             embedding = embedding_tmp
         else:
-            embedding = np.append(embedding, embedding_tmp)
+            embedding = np.append(embedding, embedding_tmp, 0)
         subjectIDs.extend(subjects)
         sessionIDs.extend(sessions)
 
