@@ -74,9 +74,9 @@ def getEmebeddingAndLabel(folderName, dataBase):
 
 def analyzeEmbeddings(embeddings, labels):
     from sklearn.manifold import TSNE
-    # from sklearn.decomposition import PCA
+    from sklearn.decomposition import PCA
 
-    tsne = TSNE(n_components=2)
+    tsne = PCA(n_components=2)
 
     emb = tsne.fit_transform(embeddings)
 
@@ -91,7 +91,7 @@ def analyzeEmbeddings(embeddings, labels):
 
 if __name__ == '__main__':
     # folderNames = ['aug_fancy', 'PGD', 'vanilla']
-    folderNames = ['aug_fancy']
+    folderNames = ['PGD']
     dataBaseNames = ['ADNI', 'AIBL', 'MIRIAD', 'OASIS3']
 
     for dbn in dataBaseNames:
