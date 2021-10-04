@@ -54,9 +54,9 @@ if __name__ == '__main__':
 
     data = loadNPYFile(subj, sess, filePath)
 
-    print data.shape
-    print np.max(data)
-    print np.std(data)
+    print (data.shape)
+    print (np.max(data))
+    print (np.std(data))
 
     result = Denoising(data, sess, noise_threshold=noise_threshold)
 
@@ -68,8 +68,8 @@ if __name__ == '__main__':
     # result[result<q] = 0
 
 
-    print np.max(result)
-    print np.std(result)
+    print (np.max(result))
+    print (np.std(result))
 
     # print result
 
@@ -82,4 +82,4 @@ if __name__ == '__main__':
 
     endTime = time.time()
 
-    print 'time elapsed:', endTime - startTime
+    print ('time elapsed:', endTime - startTime)

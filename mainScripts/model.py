@@ -153,6 +153,32 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = self.classifier(x)
         return x
 
+    def extract_embedding(self, inputs):
+        x = self.conv1(inputs)
+        x = self.bn1(x)
+        x = tf.nn.relu(x)
+        x = self.pool1(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = tf.nn.relu(x)
+        x = self.pool2(x)
+        x = self.conv3(x)
+        x = self.bn3(x)
+        x = tf.nn.relu(x)
+        x = self.pool3(x)
+        x = self.conv4(x)
+        x = self.bn4(x)
+        x = tf.nn.relu(x)
+        x = self.pool4(x)
+        x = self.conv5(x)
+        x = self.bn5(x)
+        x = tf.nn.relu(x)
+        x = self.pool5(x)
+        x = self.gap(x)
+        x = self.dp(x)
+        x = self.dense1(x)  # the representation with 1024 values
+        return x
+
     def setConvWeights(self, c):
         w = np.load(self.weights_folder + 'features.' + str(c) + '.weight.npy').astype(np.float32)
         b = np.load(self.weights_folder + 'features.' + str(c) + '.bias.npy').astype(np.float32)
@@ -179,7 +205,6 @@ class MRIImaging3DConvModel(tf.keras.Model):
 
 
 def getSaveName(args):
-
     saveName = ''
     if args.augmented:
         saveName = saveName + '_aug'
@@ -196,6 +221,7 @@ def getSaveName(args):
     saveName = saveName + '_fold_' + str(args.idx_fold) + '_seed_' + str(args.seed)
     return saveName
 
+
 def train(args):
     num_classes = 2
 
@@ -210,7 +236,7 @@ def train(args):
                                  MCI_included_as_soft_label=args.mci_balanced,
                                  idx_fold=args.idx_fold,
                                  augmented=args.augmented,
-                                 augmented_fancy = args.augmented_fancy)
+                                 augmented_fancy=args.augmented_fancy)
 
     validationData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
                                       batchSize=args.batch_size,
@@ -267,10 +293,10 @@ def train(args):
             if args.pgd != 0:
                 # todo: what's the visual difference between an AD and a normal (what are the differences we need)
 
-                images += (np.random.random(size=images.shape)*2 - 1) * args.pgd
+                images += (np.random.random(size=images.shape) * 2 - 1) * args.pgd
                 for pgd_index in range(5):
                     grad = model.calculateGradients(images, labels)
-                    images += (args.pgd/5) * np.sign(grad)
+                    images += (args.pgd / 5) * np.sign(grad)
 
                     images = np.clip(images,
                                      images - args.pgd,
@@ -309,23 +335,23 @@ def train(args):
 
         model.save_weights('weights/weights' + getSaveName(args) + '_epoch_' + str(epoch))
 
-def evaluate_crossDataSet(args):
 
+def evaluate_crossDataSet(args):
     num_classes = 2
 
     ADNI_testData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
-                                batchSize=args.batch_size,
-                                idx_fold=args.idx_fold,
-                                split='test')
+                                     batchSize=args.batch_size,
+                                     idx_fold=args.idx_fold,
+                                     split='test')
 
     AIBL_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS',
                                             'aibl_info.csv', batchSize=args.batch_size)
 
     MIRIAD_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS',
-                                            'miriad_test_info.csv', batchSize=args.batch_size)
+                                              'miriad_test_info.csv', batchSize=args.batch_size)
 
     OASIS3_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS',
-                                            'oasis3_test_info_2.csv', batchSize=args.batch_size)
+                                              'oasis3_test_info_2.csv', batchSize=args.batch_size)
 
     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
 
@@ -343,9 +369,10 @@ def evaluate_crossDataSet(args):
     total_step_test_MIRIAD = math.ceil(len(MIRIAD_testData) / args.batch_size)
     total_step_test_OASIS3 = math.ceil(len(OASIS3_testData) / args.batch_size)
 
-    model.load_weights('weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+    model.load_weights(
+        'weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
-    print ('Testing Start ...')
+    print('Testing Start ...')
 
     for i in range(total_step_test_ADNI):
         images, labels = ADNI_testData[i]
@@ -389,40 +416,44 @@ def evaluate_crossDataSet(args):
 
     sys.stdout.flush()
 
-def evaluate_crossDataSet_at_individual(args):
 
-    def writeOutResults(dataset, prediction, subjectIDs):
+def evaluate_crossDataSet_at_individual(args):
+    def writeOutResults(dataset, prediction, subjectIDs, sessionIDs):
         info = {}
         if dataset == 'ADNI':
-            tmp = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS/split.pretrained.0.csv')]
+            tmp = [line.strip() for line in
+                   open('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS/split.pretrained.0.csv')]
             for line in tmp:
                 if line.find('test') != -1:
                     items = line.split(',')
-                    info[items[0]] = line
+                    info[items[0] + '#' + items[1]] = line
 
         elif dataset == 'AIBL':
-            text = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS/aibl_info.csv')]
+            text = [line.strip() for line in
+                    open('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS/aibl_info.csv')]
             for line in text:
                 items = line.split(',')
-                info[items[0]] = line
+                info[items[0] + '#' + items[1]] = line
 
         elif dataset == 'MIRIAD':
-            text = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS/miriad_test_info.csv')]
+            text = [line.strip() for line in
+                    open('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS/miriad_test_info.csv')]
             for line in text:
                 items = line.split(',')
-                info[items[0]] = line
+                info[items[0] + '#' + items[1]] = line
 
         elif dataset == 'OASIS3':
-            text = [line.strip() for line in open('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS/oasis3_test_info_2.csv')]
+            text = [line.strip() for line in
+                    open('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS/oasis3_test_info_2.csv')]
             for line in text:
                 items = line.split(',')
-                info[items[0]] = line
+                info[items[0] + '#' + items[1]] = line
 
-
-        f = open('predictionResults/result' + getSaveName(args) + '_epoch_' + str(args.continueEpoch) +'_'+ dataset + '.csv', 'w')
+        f = open('predictionResults/result' + getSaveName(args) + '_epoch_' + str(
+            args.continueEpoch) + '_' + dataset + '.csv', 'w')
         pl = prediction.tolist()
         for i in range(len(pl)):
-            line = info[subjectIDs[i]]
+            line = info[subjectIDs[i] + '#' + sessionIDs[i]]
             f.writelines(line + ',')
             if pl[i] == 0:
                 f.writelines('CN\n')
@@ -466,21 +497,24 @@ def evaluate_crossDataSet_at_individual(args):
     total_step_test_MIRIAD = math.ceil(len(MIRIAD_testData) / args.batch_size)
     total_step_test_OASIS3 = math.ceil(len(OASIS3_testData) / args.batch_size)
 
-    model.load_weights('weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+    model.load_weights(
+        'weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
-    print ('Testing Start ...')
+    print('Testing Start ...')
 
     prediction = None
     subjectIDs = []
+    sessionIDs = []
 
     for i in range(total_step_test_ADNI):
-        images, labels, subjects = ADNI_testData[i]
+        images, labels, subjects, sessions = ADNI_testData[i]
         prediction_tmp = test_step(images, labels)
         if prediction is None:
             prediction = prediction_tmp
         else:
             prediction = np.append(prediction, prediction_tmp)
         subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
 
     val_acc = val_acc_metric.result()
     val_f1 = val_f1_metric.result()[1]
@@ -489,19 +523,21 @@ def evaluate_crossDataSet_at_individual(args):
     print("\tADNI Test acc: %.4f" % (float(val_acc),))
     print("\tADNI Test F1: %.4f" % (float(val_f1),))
 
-    writeOutResults('ADNI', prediction, subjectIDs)
+    writeOutResults('ADNI', prediction, subjectIDs, sessionIDs)
 
     prediction = None
     subjectIDs = []
+    sessionIDs = []
 
     for i in range(total_step_test_AIBL):
-        images, labels, subjects = AIBL_testData[i]
+        images, labels, subjects, sessions = AIBL_testData[i]
         prediction_tmp = test_step(images, labels)
         if prediction is None:
             prediction = prediction_tmp
         else:
             prediction = np.append(prediction, prediction_tmp)
         subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
 
     val_acc = val_acc_metric.result()
     val_f1 = val_f1_metric.result()[1]
@@ -510,19 +546,21 @@ def evaluate_crossDataSet_at_individual(args):
     print("\tAIBL Test acc: %.4f" % (float(val_acc),))
     print("\tAIBL Test F1: %.4f" % (float(val_f1),))
 
-    writeOutResults('AIBL', prediction, subjectIDs)
+    writeOutResults('AIBL', prediction, subjectIDs, sessionIDs)
 
     prediction = None
     subjectIDs = []
+    sessionIDs = []
 
     for i in range(total_step_test_MIRIAD):
-        images, labels, subjects = MIRIAD_testData[i]
+        images, labels, subjects, sessions = MIRIAD_testData[i]
         prediction_tmp = test_step(images, labels)
         if prediction is None:
             prediction = prediction_tmp
         else:
             prediction = np.append(prediction, prediction_tmp)
         subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
 
     val_acc = val_acc_metric.result()
     val_f1 = val_f1_metric.result()[1]
@@ -531,19 +569,21 @@ def evaluate_crossDataSet_at_individual(args):
     print("\tMIRIAD Test acc: %.4f" % (float(val_acc),))
     print("\tMIRIAD Test F1: %.4f" % (float(val_f1),))
 
-    writeOutResults('MIRIAD', prediction, subjectIDs)
+    writeOutResults('MIRIAD', prediction, subjectIDs, sessionIDs)
 
     prediction = None
     subjectIDs = []
+    sessionIDs = []
 
     for i in range(total_step_test_OASIS3):
-        images, labels, subjects = OASIS3_testData[i]
+        images, labels, subjects, sessions = OASIS3_testData[i]
         prediction_tmp = test_step(images, labels)
         if prediction is None:
             prediction = prediction_tmp
         else:
             prediction = np.append(prediction, prediction_tmp)
         subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
 
     val_acc = val_acc_metric.result()
     val_f1 = val_f1_metric.result()[1]
@@ -552,13 +592,242 @@ def evaluate_crossDataSet_at_individual(args):
     print("\tOASIS3 Test acc: %.4f" % (float(val_acc),))
     print("\tOASIS3 Test F1: %.4f" % (float(val_f1),))
 
-    writeOutResults('OASIS3', prediction, subjectIDs)
+    writeOutResults('OASIS3', prediction, subjectIDs, sessionIDs)
+    sys.stdout.flush()
 
-    # usage of saliency map generator
-    # smap_generator = SaliencyMapGenerator(model)
-    # smap_generator.generate(ADNI_testData, total_step_test_ADNI, "/your_local_mounted_dir/", True)
+
+def embedding_extractor(args):
+    # todo: so the embedings have some clear clustering structure,
+    #  and the clustering structure will not disappear for different models
+    #  but the clustering structure is only there when visualized by TSNE
+
+    def saveEmebddings(dataset, embedding, subjectIDs, sessionIDs, split='test'):
+        info = {}
+        if dataset == 'ADNI':
+            tmp = [line.strip() for line in
+                   open('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS/split.pretrained.0.csv')]
+            for line in tmp:
+                if line.find(split) != -1:
+                    items = line.split(',')
+                    info[items[0] + '#' + items[1]] = line
+
+        elif dataset == 'AIBL':
+            text = [line.strip() for line in
+                    open('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS/aibl_info.csv')]
+            for line in text:
+                items = line.split(',')
+                info[items[0] + '#' + items[1]] = line
+
+        elif dataset == 'MIRIAD':
+            text = [line.strip() for line in
+                    open('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS/miriad_test_info.csv')]
+            for line in text:
+                items = line.split(',')
+                info[items[0] + '#' + items[1]] = line
+
+        elif dataset == 'OASIS3':
+            text = [line.strip() for line in
+                    open('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS/oasis3_test_info_2.csv')]
+            for line in text:
+                items = line.split(',')
+                info[items[0] + '#' + items[1]] = line
+
+        if split == 'train' or split == 'val':
+            np.save('embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
+                args.continueEpoch) + '_' + dataset + '_' + split + '.npy', embedding)
+            f = open('embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
+                args.continueEpoch) + '_' + dataset + '_' + split + '.csv', 'w')
+        else:
+            np.save('embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
+                args.continueEpoch) + '_' + dataset + '.npy', embedding)
+            f = open('embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
+                args.continueEpoch) + '_' + dataset + '.csv', 'w')
+
+        for i in range(len(subjectIDs)):
+            f.writelines(subjectIDs[i] + ',' + sessionIDs[i] + '\n')
+        f.close()
+
+    tf.config.run_functions_eagerly(True)
+
+    num_classes = 2
+
+    ADNI_trainData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+                                     batchSize=args.batch_size,
+                                     idx_fold=args.idx_fold,
+                                     split='train',
+                                     returnSubjectID=True)
+
+    ADNI_valData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+                                     batchSize=args.batch_size,
+                                     idx_fold=args.idx_fold,
+                                     split='val',
+                                     returnSubjectID=True)
+
+    ADNI_testData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+                                     batchSize=args.batch_size,
+                                     idx_fold=args.idx_fold,
+                                     split='test',
+                                     returnSubjectID=True)
+
+    AIBL_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS',
+                                            'aibl_info.csv', batchSize=args.batch_size, returnSubjectID=True)
+
+    MIRIAD_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS',
+                                              'miriad_test_info.csv', batchSize=args.batch_size, returnSubjectID=True)
+
+    OASIS3_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS',
+                                              'oasis3_test_info_2.csv', batchSize=args.batch_size, returnSubjectID=True)
+
+    model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+
+    @tf.function
+    def extract_embedding(x):
+        embedding = model.extract_embedding(x)
+        return embedding.numpy()
+
+    total_step_train_ADNI = math.ceil(len(ADNI_trainData) / args.batch_size)
+    total_step_val_ADNI = math.ceil(len(ADNI_valData) / args.batch_size)
+    total_step_test_ADNI = math.ceil(len(ADNI_testData) / args.batch_size)
+    total_step_test_AIBL = math.ceil(len(AIBL_testData) / args.batch_size)
+    total_step_test_MIRIAD = math.ceil(len(MIRIAD_testData) / args.batch_size)
+    total_step_test_OASIS3 = math.ceil(len(OASIS3_testData) / args.batch_size)
+
+    model.load_weights(
+        'weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+
+    print('Testing Start ...')
+
+    embedding = None
+    subjectIDs = []
+    sessionIDs = []
+
+    for i in range(total_step_train_ADNI):
+        images, labels, subjects, sessions = ADNI_trainData[i]
+        embedding_tmp = extract_embedding(images)
+        if embedding is None:
+            embedding = embedding_tmp
+        else:
+            embedding = np.append(embedding, embedding_tmp, 0)
+        subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
+
+    saveEmebddings('ADNI', embedding, subjectIDs, sessionIDs, 'train')
+
+    embedding = None
+    subjectIDs = []
+    sessionIDs = []
+
+    for i in range(total_step_val_ADNI):
+        images, labels, subjects, sessions = ADNI_valData[i]
+        embedding_tmp = extract_embedding(images)
+        if embedding is None:
+            embedding = embedding_tmp
+        else:
+            embedding = np.append(embedding, embedding_tmp, 0)
+        subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
+
+    saveEmebddings('ADNI', embedding, subjectIDs, sessionIDs, 'val')
+
+    embedding = None
+    subjectIDs = []
+    sessionIDs = []
+
+    for i in range(total_step_test_ADNI):
+        images, labels, subjects, sessions = ADNI_testData[i]
+        embedding_tmp = extract_embedding(images)
+        if embedding is None:
+            embedding = embedding_tmp
+        else:
+            embedding = np.append(embedding, embedding_tmp, 0)
+        subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
+
+    saveEmebddings('ADNI', embedding, subjectIDs, sessionIDs)
+
+    embedding = None
+    subjectIDs = []
+    sessionIDs = []
+
+    for i in range(total_step_test_AIBL):
+        images, labels, subjects, sessions = AIBL_testData[i]
+        embedding_tmp = extract_embedding(images)
+        if embedding is None:
+            embedding = embedding_tmp
+        else:
+            embedding = np.append(embedding, embedding_tmp, 0)
+        subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
+
+    saveEmebddings('AIBL', embedding, subjectIDs, sessionIDs)
+
+    embedding = None
+    subjectIDs = []
+    sessionIDs = []
+
+    for i in range(total_step_test_MIRIAD):
+        images, labels, subjects, sessions = MIRIAD_testData[i]
+        embedding_tmp = extract_embedding(images)
+        if embedding is None:
+            embedding = embedding_tmp
+        else:
+            embedding = np.append(embedding, embedding_tmp, 0)
+        subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
+
+    saveEmebddings('MIRIAD', embedding, subjectIDs, sessionIDs)
+
+    embedding = None
+    subjectIDs = []
+    sessionIDs = []
+
+    for i in range(total_step_test_OASIS3):
+        images, labels, subjects, sessions = OASIS3_testData[i]
+        embedding_tmp = extract_embedding(images)
+        if embedding is None:
+            embedding = embedding_tmp
+        else:
+            embedding = np.append(embedding, embedding_tmp, 0)
+        subjectIDs.extend(subjects)
+        sessionIDs.extend(sessions)
+
+    saveEmebddings('OASIS3', embedding, subjectIDs, sessionIDs)
 
     sys.stdout.flush()
+
+
+def saliency_visualize(args):
+    # currently hard-coded to generate saliency maps for only ADNI dataset
+    num_classes = 2
+    model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+
+    smap_generator = SaliencyMapGenerator(model)
+
+    ADNI_trainData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+                                      batchSize=args.batch_size,
+                                      idx_fold=args.idx_fold,
+                                      split='train',
+                                      returnSubjectID=True)
+
+    ADNI_valData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+                                    batchSize=args.batch_size,
+                                    idx_fold=args.idx_fold,
+                                    split='val',
+                                    returnSubjectID=True)
+
+    ADNI_testData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+                                     batchSize=args.batch_size,
+                                     idx_fold=args.idx_fold,
+                                     split='test',
+                                     returnSubjectID=True)
+
+    total_step_train = math.ceil(len(ADNI_trainData) / args.batch_size)
+    total_step_val = math.ceil(len(ADNI_valData) / args.batch_size)
+    total_step_test = math.ceil(len(ADNI_testData) / args.batch_size)
+
+    smap_generator.generate(ADNI_trainData, total_step_train, args.smap_dir + "/adni_train/", True)
+    smap_generator.generate(ADNI_valData, total_step_val, args.smap_dir + "/adni_val/", True)
+    smap_generator.generate(ADNI_testData, total_step_test, args.smap_dir + "/adni_test/", True)
 
 def main(args):
     train(args)
@@ -573,7 +842,8 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--seed', type=int, default=1, help='random seed')
     parser.add_argument('-i', '--idx_fold', type=int, default=0, help='which partition of data to use')
     parser.add_argument('-u', '--augmented', type=int, default=0, help='whether use augmentation or not')
-    parser.add_argument('-g', '--augmented_fancy', type=int, default=0, help='whether use the fancy, Alzheimer specific augmentation or not')
+    parser.add_argument('-g', '--augmented_fancy', type=int, default=0,
+                        help='whether use the fancy, Alzheimer specific augmentation or not')
     parser.add_argument('-m', '--mci', type=int, default=0, help='whether use MCI data or not')
     parser.add_argument('-l', '--mci_balanced', type=int, default=0,
                         help='when using MCI, whether including it as a balanced data')
@@ -581,7 +851,7 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--pgd', type=float, default=0, help='whether we use pgd (actually fast fgsm)')
     parser.add_argument('-n', '--minmax', type=int, default=0, help='whether we use min max pooling')
     parser.add_argument('-f', '--weights_folder', type=str, default='.', help='the folder weights are saved')
-    parser.add_argument('-sm', '--saliency_map_type', type=str, default="", help='whether we generate a saliency for the given dataset')
+    parser.add_argument('-s', '--smap_dir', type=str, default='/media/haohanwang/Storage/AlzheimerImagingData/saliency_maps', help='the folder to save saliency maps')
 
     args = parser.parse_args()
 
@@ -597,3 +867,8 @@ if __name__ == "__main__":
         evaluate_crossDataSet(args)
     elif args.action == 2:
         evaluate_crossDataSet_at_individual(args)
+    elif args.action == 3:
+        embedding_extractor(args)
+    elif args.action == 4:
+        saliency_visualize(args)
+

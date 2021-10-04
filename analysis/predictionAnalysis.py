@@ -9,7 +9,7 @@ import numpy as np
 def load_Plot():
     labels_train, predictions_train = loadInformation(trainFlag=True)
 
-    print np.mean(labels_train)
+    print (np.mean(labels_train))
 
     plt.hist(predictions_train)
     plt.show()

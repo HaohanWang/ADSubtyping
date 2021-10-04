@@ -4,8 +4,8 @@ from tensorflow.keras import losses
 import numpy as np
 import matplotlib as plt
 
-# TODO need to be modified / refactored to adapt to local mounted filesystem and save in Subjects' dir
-DEFAULT_SAVE_PATH = "/Users/gn03249822/Documents/"
+# TODO can to be modified / refactored to adapt to local mounted filesystem and save in Subjects' dir
+DEFAULT_SAVE_PATH = "./saliency_maps/"
 
 
 class SaliencyMapGenerator(object):
@@ -38,6 +38,5 @@ class SaliencyMapGenerator(object):
                 # normalize between 0 and 1
                 min_val, max_val = np.min(gradient), np.max(gradient)
                 smap = (gradient - min_val) / (max_val - min_val + tf.keras.backend.epsilon())
-                print("saving saliency map")
-                np.save(save_dir + "saliency_map/" + str(subject_id) + "_smap.npy", smap)
+                np.save(save_dir + str(subject_id) + "_smap.npy", smap)
 

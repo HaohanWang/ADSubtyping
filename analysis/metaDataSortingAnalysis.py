@@ -41,8 +41,8 @@ def checkMCIvAD():
         if MCIFlag and ADFlag:
             caseCount += 1
 
-    print caseCount
-    print controlCount
+    print (caseCount)
+    print (controlCount)
 
 
 if __name__ == '__main__':
