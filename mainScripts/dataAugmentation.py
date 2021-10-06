@@ -15,9 +15,14 @@ class MRIDataAugmentation():
 
         self.funcs_pool = [self.rotate_img, self.scale_img, self.translate_img]
 
+        self.indices_block = [((0, 84), (0, 104), (0, 89)), ((84, 169), (0, 104), (0, 89)),
+                              ((0, 84), (104, 208), (0, 89)), ((84, 169), (104, 208), (0, 89)),
+                              ((0, 84), (0, 104), (89, 179)), ((84, 169), (0, 104), (89, 179)),
+                              ((0, 84), (104, 208), (89, 179)), ((84, 169), (104, 208), (89, 179))]
+
     def augmentData_batch_withLabel(self, imgs, labels):
         for i in range(imgs.shape[0]):
-            imgs[i,:,:,:,0] = self.augmentData_single_withLabel(imgs[i,:,:,:,0], labels[i])
+            imgs[i, :, :, :, 0] = self.augmentData_single_withLabel(imgs[i, :, :, :, 0], labels[i])
         return imgs
 
     def augmentData_single_withLabel(self, img, label):
@@ -29,9 +34,24 @@ class MRIDataAugmentation():
                 return grey_erosion(img, size=(c, c, c))
         return img
 
+    def augmentData_batch_erasing(self, imgs):
+        for i in range(imgs.shape[0]):
+            imgs[i, :, :, :, 0] = self.augmentData_single_erasing(imgs[i, :, :, :, 0])
+        return imgs
+
+    def augmentData_single_erasing(self, img):
+        indices_idx = np.random.choice(range(8), 4, replace=False)
+        indices = [self.indices_block[k] for k in indices_idx]
+        for indice_set in indices:
+            img[indice_set[0][0]:indice_set[0][1], indice_set[1][0]:indice_set[1][1],
+            indice_set[2][0]:indice_set[2][1]] = \
+                np.random.random(size=(indice_set[0][1] - indice_set[0][0], indice_set[1][1] - indice_set[1][0],
+                                       indice_set[2][1] - indice_set[2][0]))
+        return img
+
     def augmentData_batch(self, imgs):
         for i in range(imgs.shape[0]):
-            imgs[i,:,:,:,0] = self.augmentData_single(imgs[i,:,:,:,0])
+            imgs[i, :, :, :, 0] = self.augmentData_single(imgs[i, :, :, :, 0])
         return imgs
 
     def augmentData_single(self, img):
@@ -43,14 +63,13 @@ class MRIDataAugmentation():
                 img = func(img)
         return img
 
-
     def rotate_img(self, image):
-        theta = np.random.random()*20-10.0
+        theta = np.random.random() * 20 - 10.0
         return rotate(image, float(theta), reshape=False, order=0, mode='nearest')
 
     def scale_img(self, image):
         order = 0
-        factor = np.random.random()*0.2 + 0.9
+        factor = np.random.random() * 0.2 + 0.9
 
         zheight = int(np.round(factor * self.height))
         zwidth = int(np.round(factor * self.width))
@@ -62,7 +81,7 @@ class MRIDataAugmentation():
             col = (self.width - zwidth) // 2
             layer = (self.depth - zdepth) // 2
             newimg[row:row + zheight, col:col + zwidth, layer:layer + zdepth] = interpolation.zoom(image, (
-            float(factor), float(factor), 1.0), order=order, mode='nearest')[0:zheight, 0:zwidth, 0:zdepth]
+                float(factor), float(factor), 1.0), order=order, mode='nearest')[0:zheight, 0:zwidth, 0:zdepth]
 
             return newimg
 
@@ -85,5 +104,5 @@ class MRIDataAugmentation():
             return image
 
     def translate_img(self, image):
-        offset  = list(np.random.randint(-5,5, size=3))
+        offset = list(np.random.randint(-5, 5, size=3))
         return interpolation.shift(image, offset, order=0, mode='nearest')

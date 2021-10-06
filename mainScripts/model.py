@@ -217,6 +217,8 @@ def getSaveName(args):
         saveName = saveName + '_pgd_' + str(args.pgd)
     if args.minmax:
         saveName = saveName + '_mm'
+    if args.dropBlock:
+        saveName = saveName + '_db'
     saveName = saveName + '_fold_' + str(args.idx_fold) + '_seed_' + str(args.seed)
     return saveName
 
@@ -235,7 +237,8 @@ def train(args):
                                  MCI_included_as_soft_label=args.mci_balanced,
                                  idx_fold=args.idx_fold,
                                  augmented=args.augmented,
-                                 augmented_fancy=args.augmented_fancy)
+                                 augmented_fancy=args.augmented_fancy,
+                                 dropBlock=args.dropBlock)
 
     validationData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
                                       batchSize=args.batch_size,
@@ -818,6 +821,7 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--pgd', type=float, default=0, help='whether we use pgd (actually fast fgsm)')
     parser.add_argument('-n', '--minmax', type=int, default=0, help='whether we use min max pooling')
     parser.add_argument('-f', '--weights_folder', type=str, default='.', help='the folder weights are saved')
+    parser.add_argument('-d', '--dropBlock', type=int, default=0, help='whether we drop half of the information of the images')
 
     args = parser.parse_args()
 
