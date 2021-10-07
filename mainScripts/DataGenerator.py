@@ -28,7 +28,8 @@ class MRIDataGenerator(keras.utils.Sequence):
                  augmented_fancy=False,
                  MCI_included=False,
                  MCI_included_as_soft_label=False,
-                 returnSubjectID=False
+                 returnSubjectID=False,
+                 dropBlock = False
                  ):
         # 'Initialization'
 
@@ -46,6 +47,7 @@ class MRIDataGenerator(keras.utils.Sequence):
         self.MCI_included = MCI_included
         self.MCI_included_as_soft_label = MCI_included_as_soft_label
         self.returnSubjectID = returnSubjectID
+        self.dropBlock = dropBlock
 
         self.parse_csv_file()
         self._get_batch_split()
@@ -64,6 +66,8 @@ class MRIDataGenerator(keras.utils.Sequence):
                 if self.augmented:
                     if self.augmented_fancy:
                         images = self.dataAugmentation.augmentData_batch_withLabel(images, labels)
+                    if self.dropBlock:
+                        images = self.dataAugmentation.augmentData_batch_erasing(images)
                     images = self.dataAugmentation.augmentData_batch(images)
                 return images, labels
             else:
