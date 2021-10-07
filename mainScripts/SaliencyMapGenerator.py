@@ -41,5 +41,3 @@ class SaliencyMapGenerator(object):
                 smap = (gradient - min_val) / (max_val - min_val + tf.keras.backend.epsilon())
 
                 np.save("{}/{}_{}_smap.npy".format(save_dir, subject_id, session_id), smap)
-                # np.save(save_dir + str(subject_id) + "_smap.npy", smap)
-

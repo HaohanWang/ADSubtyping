@@ -20,6 +20,7 @@ from SaliencyMapGenerator import SaliencyMapGenerator
 
 
 READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
+# READ_DIR = '/Volumes/Elements/Daniel/AlzheimerData/'
 
 class minMaxPool(tf.keras.layers.Layer):
     def __init__(self, pool_size, strides=1):
@@ -856,7 +857,7 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--pgd', type=float, default=0, help='whether we use pgd (actually fast fgsm)')
     parser.add_argument('-n', '--minmax', type=int, default=0, help='whether we use min max pooling')
     parser.add_argument('-f', '--weights_folder', type=str, default='.', help='the folder weights are saved')
-    parser.add_argument('-s', '--smap_dir', type=str, default=READ_DIR +'saliency_maps', help='the folder to save saliency maps')
+    parser.add_argument('-v', '--smap_dir', type=str, default=READ_DIR +'saliency_maps', help='the folder to save saliency maps')
     parser.add_argument('-d', '--dropBlock', type=int, default=0, help='whether we drop half of the information of the images')
 
     args = parser.parse_args()
