@@ -16,7 +16,11 @@ import json
 import argparse
 
 from DataGenerator import MRIDataGenerator, MRIDataGenerator_Simple
+from SaliencyMapGenerator import SaliencyMapGenerator
 
+
+READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
+# READ_DIR = '/Volumes/Elements/Daniel/AlzheimerData/'
 
 class minMaxPool(tf.keras.layers.Layer):
     def __init__(self, pool_size, strides=1):
@@ -197,9 +201,9 @@ class MRIImaging3DConvModel(tf.keras.Model):
             tape.watch(x)
             prediction = self(x, training=False)
             loss = losses.CategoricalCrossentropy(from_logits=True)(y, prediction)
-
             # Get the gradients of the loss w.r.t to the input image.
         gradient = tape.gradient(loss, x)
+
         return gradient
 
 
@@ -230,7 +234,7 @@ def train(args):
 
     ## todo: let's reorder the samples with age information
 
-    trainData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+    trainData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                  split='train',
                                  batchSize=args.batch_size,
                                  MCI_included=args.mci,
@@ -240,12 +244,12 @@ def train(args):
                                  augmented_fancy=args.augmented_fancy,
                                  dropBlock=args.dropBlock)
 
-    validationData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+    validationData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                       batchSize=args.batch_size,
                                       idx_fold=args.idx_fold,
                                       split='val')
 
-    testData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+    testData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                 batchSize=args.batch_size,
                                 idx_fold=args.idx_fold,
                                 split='test')
@@ -345,18 +349,18 @@ def train(args):
 def evaluate_crossDataSet(args):
     num_classes = 2
 
-    ADNI_testData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+    ADNI_testData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                      batchSize=args.batch_size,
                                      idx_fold=args.idx_fold,
                                      split='test')
 
-    AIBL_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS',
+    AIBL_testData = MRIDataGenerator_Simple(READ_DIR +'AIBL_CAPS',
                                             'aibl_info.csv', batchSize=args.batch_size)
 
-    MIRIAD_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS',
+    MIRIAD_testData = MRIDataGenerator_Simple(READ_DIR + 'MIRIAD_CAPS',
                                               'miriad_test_info.csv', batchSize=args.batch_size)
 
-    OASIS3_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS',
+    OASIS3_testData = MRIDataGenerator_Simple(READ_DIR + 'OASIS3_CAPS',
                                               'oasis3_test_info_2.csv', batchSize=args.batch_size)
 
     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
@@ -428,7 +432,7 @@ def evaluate_crossDataSet_at_individual(args):
         info = {}
         if dataset == 'ADNI':
             tmp = [line.strip() for line in
-                   open('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS/split.pretrained.0.csv')]
+                   open(READ_DIR +'ADNI_CAPS/split.pretrained.0.csv')]
             for line in tmp:
                 if line.find('test') != -1:
                     items = line.split(',')
@@ -436,21 +440,21 @@ def evaluate_crossDataSet_at_individual(args):
 
         elif dataset == 'AIBL':
             text = [line.strip() for line in
-                    open('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS/aibl_info.csv')]
+                    open(READ_DIR +'AIBL_CAPS/aibl_info.csv')]
             for line in text:
                 items = line.split(',')
                 info[items[0] + '#' + items[1]] = line
 
         elif dataset == 'MIRIAD':
             text = [line.strip() for line in
-                    open('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS/miriad_test_info.csv')]
+                    open(READ_DIR +'MIRIAD_CAPS/miriad_test_info.csv')]
             for line in text:
                 items = line.split(',')
                 info[items[0] + '#' + items[1]] = line
 
         elif dataset == 'OASIS3':
             text = [line.strip() for line in
-                    open('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS/oasis3_test_info_2.csv')]
+                    open(READ_DIR +'OASIS3_CAPS/oasis3_test_info_2.csv')]
             for line in text:
                 items = line.split(',')
                 info[items[0] + '#' + items[1]] = line
@@ -471,19 +475,19 @@ def evaluate_crossDataSet_at_individual(args):
 
     num_classes = 2
 
-    ADNI_testData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+    ADNI_testData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
                                      batchSize=args.batch_size,
                                      idx_fold=args.idx_fold,
                                      split='test',
                                      returnSubjectID=True)
 
-    AIBL_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS',
+    AIBL_testData = MRIDataGenerator_Simple(READ_DIR +'AIBL_CAPS',
                                             'aibl_info.csv', batchSize=args.batch_size, returnSubjectID=True)
 
-    MIRIAD_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS',
+    MIRIAD_testData = MRIDataGenerator_Simple(READ_DIR +'MIRIAD_CAPS',
                                               'miriad_test_info.csv', batchSize=args.batch_size, returnSubjectID=True)
 
-    OASIS3_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS',
+    OASIS3_testData = MRIDataGenerator_Simple(READ_DIR +'OASIS3_CAPS',
                                               'oasis3_test_info_2.csv', batchSize=args.batch_size, returnSubjectID=True)
 
     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
@@ -599,7 +603,6 @@ def evaluate_crossDataSet_at_individual(args):
     print("\tOASIS3 Test F1: %.4f" % (float(val_f1),))
 
     writeOutResults('OASIS3', prediction, subjectIDs, sessionIDs)
-
     sys.stdout.flush()
 
 
@@ -612,7 +615,7 @@ def embedding_extractor(args):
         info = {}
         if dataset == 'ADNI':
             tmp = [line.strip() for line in
-                   open('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS/split.pretrained.0.csv')]
+                   open(READ_DIR +'ADNI_CAPS/split.pretrained.0.csv')]
             for line in tmp:
                 if line.find(split) != -1:
                     items = line.split(',')
@@ -620,21 +623,21 @@ def embedding_extractor(args):
 
         elif dataset == 'AIBL':
             text = [line.strip() for line in
-                    open('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS/aibl_info.csv')]
+                    open(READ_DIR +'AIBL_CAPS/aibl_info.csv')]
             for line in text:
                 items = line.split(',')
                 info[items[0] + '#' + items[1]] = line
 
         elif dataset == 'MIRIAD':
             text = [line.strip() for line in
-                    open('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS/miriad_test_info.csv')]
+                    open(READ_DIR +'MIRIAD_CAPS/miriad_test_info.csv')]
             for line in text:
                 items = line.split(',')
                 info[items[0] + '#' + items[1]] = line
 
         elif dataset == 'OASIS3':
             text = [line.strip() for line in
-                    open('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS/oasis3_test_info_2.csv')]
+                    open(READ_DIR +'OASIS3_CAPS/oasis3_test_info_2.csv')]
             for line in text:
                 items = line.split(',')
                 info[items[0] + '#' + items[1]] = line
@@ -658,31 +661,31 @@ def embedding_extractor(args):
 
     num_classes = 2
 
-    ADNI_trainData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+    ADNI_trainData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
                                      batchSize=args.batch_size,
                                      idx_fold=args.idx_fold,
                                      split='train',
                                      returnSubjectID=True)
 
-    ADNI_valData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+    ADNI_valData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
                                      batchSize=args.batch_size,
                                      idx_fold=args.idx_fold,
                                      split='val',
                                      returnSubjectID=True)
 
-    ADNI_testData = MRIDataGenerator('/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS',
+    ADNI_testData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
                                      batchSize=args.batch_size,
                                      idx_fold=args.idx_fold,
                                      split='test',
                                      returnSubjectID=True)
 
-    AIBL_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/AIBL_CAPS',
+    AIBL_testData = MRIDataGenerator_Simple(READ_DIR +'AIBL_CAPS',
                                             'aibl_info.csv', batchSize=args.batch_size, returnSubjectID=True)
 
-    MIRIAD_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/MIRIAD_CAPS',
+    MIRIAD_testData = MRIDataGenerator_Simple(READ_DIR +'MIRIAD_CAPS',
                                               'miriad_test_info.csv', batchSize=args.batch_size, returnSubjectID=True)
 
-    OASIS3_testData = MRIDataGenerator_Simple('/media/haohanwang/Storage/AlzheimerImagingData/OASIS3_CAPS',
+    OASIS3_testData = MRIDataGenerator_Simple(READ_DIR +'OASIS3_CAPS',
                                               'oasis3_test_info_2.csv', batchSize=args.batch_size, returnSubjectID=True)
 
     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
@@ -803,6 +806,39 @@ def embedding_extractor(args):
     sys.stdout.flush()
 
 
+def saliency_visualize(args):
+    # currently hard-coded to generate saliency maps for only ADNI dataset
+    num_classes = 2
+    model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+
+    smap_generator = SaliencyMapGenerator(model)
+
+    ADNI_trainData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
+                                      batchSize=args.batch_size,
+                                      idx_fold=args.idx_fold,
+                                      split='train',
+                                      returnSubjectID=True)
+
+    ADNI_valData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
+                                    batchSize=args.batch_size,
+                                    idx_fold=args.idx_fold,
+                                    split='val',
+                                    returnSubjectID=True)
+
+    ADNI_testData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
+                                     batchSize=args.batch_size,
+                                     idx_fold=args.idx_fold,
+                                     split='test',
+                                     returnSubjectID=True)
+
+    total_step_train = math.ceil(len(ADNI_trainData) / args.batch_size)
+    total_step_val = math.ceil(len(ADNI_valData) / args.batch_size)
+    total_step_test = math.ceil(len(ADNI_testData) / args.batch_size)
+
+    smap_generator.generate(ADNI_trainData, total_step_train, args.smap_dir + "/adni_train/", True)
+    smap_generator.generate(ADNI_valData, total_step_val, args.smap_dir + "/adni_val/", True)
+    smap_generator.generate(ADNI_testData, total_step_test, args.smap_dir + "/adni_test/", True)
+
 def main(args):
     train(args)
 
@@ -825,6 +861,7 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--pgd', type=float, default=0, help='whether we use pgd (actually fast fgsm)')
     parser.add_argument('-n', '--minmax', type=int, default=0, help='whether we use min max pooling')
     parser.add_argument('-f', '--weights_folder', type=str, default='.', help='the folder weights are saved')
+    parser.add_argument('-v', '--smap_dir', type=str, default=READ_DIR +'saliency_maps', help='the folder to save saliency maps')
     parser.add_argument('-d', '--dropBlock', type=int, default=0, help='whether we drop half of the information of the images')
 
     args = parser.parse_args()
@@ -843,3 +880,6 @@ if __name__ == "__main__":
         evaluate_crossDataSet_at_individual(args)
     elif args.action == 3:
         embedding_extractor(args)
+    elif args.action == 4:
+        saliency_visualize(args)
+
