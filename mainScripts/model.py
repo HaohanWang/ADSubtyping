@@ -34,7 +34,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
     def __init__(self, nClass, args):
         super(MRIImaging3DConvModel, self).__init__()
 
-        if args.continueEpoch == 0:
+        if args.continueEpoch == 0 and args.dropBlock == 0:
             self.weights_folder = '../pretrainModels/best_model/fold_' + str(args.idx_fold) + '/npy_weights/'
 
             self.conv1 = layers.Conv3D(filters=8, kernel_size=3,
@@ -281,6 +281,10 @@ def train(args):
 
     if args.continueEpoch != 0:
         model.load_weights('weights/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+
+    if args.dropBlock:
+        # dropblock training is too hard, so let's load the previous one to continue as epoch 1
+        model.load_weights('weights/weights_regular_training/weights_aug_fold_0_seed_1_epoch_50')
 
     for epoch in range(1, args.epochs + 1):
 

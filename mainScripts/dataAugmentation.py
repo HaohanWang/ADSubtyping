@@ -34,19 +34,21 @@ class MRIDataAugmentation():
                 return grey_erosion(img, size=(c, c, c))
         return img
 
-    def augmentData_batch_erasing(self, imgs):
+    def augmentData_batch_erasing(self, imgs, iterCount):
         for i in range(imgs.shape[0]):
-            imgs[i, :, :, :, 0] = self.augmentData_single_erasing(imgs[i, :, :, :, 0])
+            imgs[i, :, :, :, 0] = self.augmentData_single_erasing(imgs[i, :, :, :, 0], iterCount)
         return imgs
 
-    def augmentData_single_erasing(self, img):
-        indices_idx = np.random.choice(range(8), 4, replace=False)
+    def augmentData_single_erasing(self, img, iterCount):
+        indices_idx = np.random.choice(range(8), iterCount // 8000 + 1, replace=False)
+
         indices = [self.indices_block[k] for k in indices_idx]
         for indice_set in indices:
             img[indice_set[0][0]:indice_set[0][1], indice_set[1][0]:indice_set[1][1],
             indice_set[2][0]:indice_set[2][1]] = \
                 np.random.random(size=(indice_set[0][1] - indice_set[0][0], indice_set[1][1] - indice_set[1][0],
                                        indice_set[2][1] - indice_set[2][0]))
+
         return img
 
     def augmentData_batch(self, imgs):

@@ -49,6 +49,8 @@ class MRIDataGenerator(keras.utils.Sequence):
         self.returnSubjectID = returnSubjectID
         self.dropBlock = dropBlock
 
+        self.dropBlock_iterationCount = 0
+
         self.parse_csv_file()
         self._get_batch_split()
         self.on_epoch_end()
@@ -67,7 +69,8 @@ class MRIDataGenerator(keras.utils.Sequence):
                     if self.augmented_fancy:
                         images = self.dataAugmentation.augmentData_batch_withLabel(images, labels)
                     if self.dropBlock:
-                        images = self.dataAugmentation.augmentData_batch_erasing(images)
+                        images = self.dataAugmentation.augmentData_batch_erasing(images, self.dropBlock_iterationCount)
+                        self.dropBlock_iterationCount += 1
                     images = self.dataAugmentation.augmentData_batch(images)
                 return images, labels
             else:
