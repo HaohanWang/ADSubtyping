@@ -811,6 +811,9 @@ def saliency_visualize(args):
     num_classes = 2
     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
 
+    model.load_weights(
+        'weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+
     smap_generator = SaliencyMapGenerator(model)
 
     ADNI_trainData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
