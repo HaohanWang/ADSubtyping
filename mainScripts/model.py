@@ -842,6 +842,15 @@ def saliency_visualize(args):
     smap_generator.generate(ADNI_valData, total_step_val, args.smap_dir + "/adni_val/", True)
     smap_generator.generate(ADNI_testData, total_step_test, args.smap_dir + "/adni_test/", True)
 
+def activation_maximization_visualize(args):
+    num_classes = 2
+    model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+
+    model.load_weights(
+        'weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+
+
+
 def main(args):
     train(args)
 
