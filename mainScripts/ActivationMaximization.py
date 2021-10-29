@@ -7,22 +7,22 @@ Class to compute and visualize activation maximizations for different CNN filter
 """
 
 
-class ActivationMaximation():
-    def __int__(self, model, iters=30, lr=10.0):
-        self.feature_extractor = model
+class ActivationMaximizer(object):
+    def __init__(self, model, iters=30, lr=10.0):
+        self.model = model
         self.iters = iters
         self.learning_rate = lr
-        # TODO add parameters for gradient ascent
 
     def compute_loss(self, input_image, filter_index):
-        activation = self.feature_extractor(input_image, training=False)
-        # We avoid border artifacts by only involving non-border pixels in the loss. TODO is this necessary
+        activation = self.model(input_image, training=False)
+        # We avoid border artifacts by only involving non-border pixels in the loss.
+        # TODO is this necessary
         filter_activation = activation[:, 2:-2, 2:-2, 2:-2, filter_index]
         return tf.reduce_mean(filter_activation)
 
     def initialize_image(self):
         # TODO verify dimensions of 3D images and the expected range of input values
-        img = tf.random.uniform((1, 169, 208, 179, 3))
+        img = tf.random.uniform(shape=(169, 208, 179))
         return img
 
     @tf.function

@@ -17,10 +17,12 @@ import argparse
 
 from DataGenerator import MRIDataGenerator, MRIDataGenerator_Simple
 from SaliencyMapGenerator import SaliencyMapGenerator
+from ActivationMaximization import ActivationMaximizer
 
 
-READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
-# READ_DIR = '/Volumes/Elements/Daniel/AlzheimerData/'
+# READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
+READ_DIR = '/Volumes/Elements/Daniel/AlzheimerData/'
+WEIGHTS_DIR = '/Volumes/Elements/Daniel/weights/'
 
 class minMaxPool(tf.keras.layers.Layer):
     def __init__(self, pool_size, strides=1):
@@ -847,8 +849,13 @@ def activation_maximization_visualize(args):
     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
 
     model.load_weights(
-        'weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+        WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
+    am = ActivationMaximizer(model)
+
+    filter_idx = args.visualize_filter_idx
+
+    print(am.visualize_activation(filter_idx))
 
 
 def main(args):
@@ -874,6 +881,8 @@ if __name__ == "__main__":
     parser.add_argument('-n', '--minmax', type=int, default=0, help='whether we use min max pooling')
     parser.add_argument('-f', '--weights_folder', type=str, default='.', help='the folder weights are saved')
     parser.add_argument('-v', '--smap_dir', type=str, default=READ_DIR +'saliency_maps', help='the folder to save saliency maps')
+    parser.add_argument('-w', '--activation_maximization_dir', type=str, default=READ_DIR +'activation_maximizations', help='the folder to save visualized activation maximizations')
+    parser.add_argument('-x', '--visualize_filter_idx', type=int, default=-1, help='CNN filter index for visualizing activation maximization')
     parser.add_argument('-d', '--dropBlock', type=int, default=0, help='whether we drop half of the information of the images')
 
     args = parser.parse_args()
@@ -894,4 +903,6 @@ if __name__ == "__main__":
         embedding_extractor(args)
     elif args.action == 4:
         saliency_visualize(args)
+    elif args.action == 5:
+        activation_maximization_visualize(args)
 

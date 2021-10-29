@@ -1,6 +1,8 @@
 #!/bin/bash
 
-python model.py -f weights_fancy_aug -u 1 -g 1 -a 4 -b 8 -c 55 -v "/Users/gn03249822/Documents/saliency"
+python model.py -f weights_fancy_aug -u 1 -g 1 -a 5 -b 8 -c 55 -w "/Users/gn03249822/Documents/"
+
+
 
 #for i in {55..100..5}
 #do
