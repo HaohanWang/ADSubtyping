@@ -9,7 +9,7 @@ Class to compute and visualize activation maximizations for different CNN filter
 
 class ActivationMaximizer(object):
     # TODO hyperparameters tuning
-    def __init__(self, model, intermediate_ly_idx=2, iters=15, lr=10):
+    def __init__(self, model, intermediate_ly_idx, iters=15, lr=10):
         self.model = model
         self.layer_idx = intermediate_ly_idx
         self.iters = iters

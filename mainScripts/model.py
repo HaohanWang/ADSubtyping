@@ -158,7 +158,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = self.classifier(x)
         return x
 
-    def extract_embedding(self, inputs, intermediate_ly_idx=None):
+    def extract_embedding(self, inputs, intermediate_ly_idx=-1):
         x = self.conv1(inputs)
         x = self.bn1(x)
         x = tf.nn.relu(x)
@@ -896,7 +896,6 @@ def activation_maximization_visualize(args):
     activation_maximizer.visualize_activation(AIBL_testData, total_step_test_AIBL)
     activation_maximizer.visualize_activation(MIRIAD_testData, total_step_test_MIRIAD)
     activation_maximizer.visualize_activation(OASIS3_testData, total_step_test_OASIS3)
-
 
 
 def main(args):
