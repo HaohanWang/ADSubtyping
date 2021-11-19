@@ -18,7 +18,11 @@ class ActivationMaximizer(object):
     def compute_loss(self, images):
         activation = self.model.extract_embedding(images, self.layer_idx)
         # cropping is done scientifically during MRI data postprocessing
-        return tf.reduce_mean(activation)
+
+        # treating mean over activation layer as the loss to perform gradient ascent
+        activation_as_loss = tf.reduce_mean(activation, axis=(1, 2, 3, 4))
+
+        return activation_as_loss
 
     @tf.function
     def gradient_ascent_step(self, images, learning_rate):
