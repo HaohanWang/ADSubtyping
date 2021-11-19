@@ -13,7 +13,7 @@ class SaliencyMapGenerator(object):
         self.model = model
 
 # generic class to generate saliency map for all subjects in the (batched) dataset
-    def generate(self, dataset, total_batch_steps, save_dir=DEFAULT_SAVE_PATH, subject_ids_included=False):
+    def generate(self, dataset, total_batch_steps, save_dir=DEFAULT_SAVE_PATH, subject_ids_included=False, visualize_embedding=False):
         subject_ids = None
         for i in range(total_batch_steps):
             if subject_ids_included:
@@ -28,8 +28,10 @@ class SaliencyMapGenerator(object):
 
                 loss = losses.CategoricalCrossentropy(from_logits=True)(labels, prediction)
 
-            gradients = tape.gradient(loss, images)
-            gradients = gradients.numpy()
+            if visualize_embedding:
+                gradients = tape.gradient(loss, self.model.extract_embedding(images, -1)).numpy()
+            else:
+                gradients = tape.gradient(loss, images).numpy()
 
             if subject_ids is None:
                 subject_ids = [range(len(gradients))]

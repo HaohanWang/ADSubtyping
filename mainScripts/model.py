@@ -853,9 +853,9 @@ def saliency_visualize(args):
     total_step_val = math.ceil(len(ADNI_valData) / args.batch_size)
     total_step_test = math.ceil(len(ADNI_testData) / args.batch_size)
 
-    smap_generator.generate(ADNI_trainData, total_step_train, args.smap_dir + "/adni_train/", True)
-    smap_generator.generate(ADNI_valData, total_step_val, args.smap_dir + "/adni_val/", True)
-    smap_generator.generate(ADNI_testData, total_step_test, args.smap_dir + "/adni_test/", True)
+    smap_generator.generate(ADNI_trainData, total_step_train, args.smap_dir + "/adni_train/", True, args.visualize_embeddings)
+    smap_generator.generate(ADNI_valData, total_step_val, args.smap_dir + "/adni_val/", True, args.visualize_embeddings)
+    smap_generator.generate(ADNI_testData, total_step_test, args.smap_dir + "/adni_test/", True, args.visualize_embeddings)
 
 
 def activation_maximization_visualize(args):
@@ -923,6 +923,7 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--smap_dir', type=str, default=READ_DIR +'saliency_maps', help='the folder to save saliency maps')
     parser.add_argument('-w', '--activation_maximization_dir', type=str, default=READ_DIR +'activation_maximizations', help='the folder to save visualized activation maximizations')
     parser.add_argument('-x', '--visualize_layer_idx', type=int, default=2, help='CNN layer index for visualizing activation maximization')
+    parser.add_argument('-y', '--visualize_embeddings', type=int, default=0, help='whether we visualize the loss w.r.t the embedding layers, instead of inputs')
     parser.add_argument('-d', '--dropBlock', type=int, default=0, help='whether we drop half of the information of the images')
 
     args = parser.parse_args()
