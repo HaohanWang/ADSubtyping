@@ -98,7 +98,7 @@ def embeddingFileLoader(folderName, dataBaseName, split='test'):
         for i in range(len(ids)):
             gender[i] = genderDict[ids[i]]
 
-    return ebd, label, age, gender
+    return ebd, label.astype(int), age, gender
 
 if __name__ == '__main__':
     embeddingFileLoader('aug_fancy', 'AIBL')
