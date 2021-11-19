@@ -14,15 +14,18 @@ import time
 import math
 import json
 import argparse
+import psutil
 
 from DataGenerator import MRIDataGenerator, MRIDataGenerator_Simple
 from SaliencyMapGenerator import SaliencyMapGenerator
 from ActivationMaximization import ActivationMaximizer
 
-
-# READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
-READ_DIR = '/Volumes/Elements/Daniel/AlzheimerData/'
-WEIGHTS_DIR = '/Volumes/Elements/Daniel/weights/'
+if psutil.Process().username() == 'haohanwang':
+    READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
+    WEIGHTS_DIR = 'weights/'
+else:
+    READ_DIR = '/Volumes/Elements/Daniel/AlzheimerData/'
+    WEIGHTS_DIR = '/Volumes/Elements/Daniel/weights/'
 
 class minMaxPool(tf.keras.layers.Layer):
     def __init__(self, pool_size, strides=1):
