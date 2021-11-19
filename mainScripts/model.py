@@ -17,10 +17,12 @@ import argparse
 
 from DataGenerator import MRIDataGenerator, MRIDataGenerator_Simple
 from SaliencyMapGenerator import SaliencyMapGenerator
+from ActivationMaximization import ActivationMaximizer
 
 
-READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
-# READ_DIR = '/Volumes/Elements/Daniel/AlzheimerData/'
+# READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
+READ_DIR = '/Volumes/Elements/Daniel/AlzheimerData/'
+WEIGHTS_DIR = '/Volumes/Elements/Daniel/weights/'
 
 class minMaxPool(tf.keras.layers.Layer):
     def __init__(self, pool_size, strides=1):
@@ -87,7 +89,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
             self.dense2 = layers.Dense(units=128, activation="relu")
             self.classifier = layers.Dense(units=nClass, activation="relu")
         else:
-            self.conv1 = layers.Conv3D(filters=8, kernel_size=3)
+            self.conv1 = layers.Conv3D(filters=8, kernel_size=3, input_shape=(169, 208, 179))
             self.bn1 = layers.BatchNormalization()
             if args.minmax:
                 self.pool1 = minMaxPool(pool_size=2)
@@ -156,26 +158,39 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = self.classifier(x)
         return x
 
-    def extract_embedding(self, inputs):
+    def extract_embedding(self, inputs, intermediate_ly_idx=-1):
         x = self.conv1(inputs)
         x = self.bn1(x)
         x = tf.nn.relu(x)
         x = self.pool1(x)
         x = self.conv2(x)
+
         x = self.bn2(x)
         x = tf.nn.relu(x)
+        if intermediate_ly_idx == 1:
+            return x
+
         x = self.pool2(x)
         x = self.conv3(x)
         x = self.bn3(x)
         x = tf.nn.relu(x)
+        if intermediate_ly_idx == 2:
+            return x
+
         x = self.pool3(x)
         x = self.conv4(x)
         x = self.bn4(x)
         x = tf.nn.relu(x)
+        if intermediate_ly_idx == 3:
+            return x
+
         x = self.pool4(x)
         x = self.conv5(x)
         x = self.bn5(x)
         x = tf.nn.relu(x)
+        if intermediate_ly_idx == 4:
+            return x
+
         x = self.pool5(x)
         x = self.gap(x)
         x = self.dp(x)
@@ -842,6 +857,47 @@ def saliency_visualize(args):
     smap_generator.generate(ADNI_valData, total_step_val, args.smap_dir + "/adni_val/", True)
     smap_generator.generate(ADNI_testData, total_step_test, args.smap_dir + "/adni_test/", True)
 
+
+def activation_maximization_visualize(args):
+    num_classes = 2
+
+    tf.config.run_functions_eagerly(True)
+    model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+
+    model.load_weights(
+        WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+
+
+    ADNI_testData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
+                                     batchSize=args.batch_size,
+                                     idx_fold=args.idx_fold,
+                                     split='test',
+                                     returnSubjectID=True)
+
+    AIBL_testData = MRIDataGenerator_Simple(READ_DIR + 'AIBL_CAPS',
+                                            'aibl_info.csv', batchSize=args.batch_size, returnSubjectID=True)
+
+    MIRIAD_testData = MRIDataGenerator_Simple(READ_DIR + 'MIRIAD_CAPS',
+                                              'miriad_test_info.csv', batchSize=args.batch_size, returnSubjectID=True)
+
+    OASIS3_testData = MRIDataGenerator_Simple(READ_DIR + 'OASIS3_CAPS',
+                                              'oasis3_test_info_2.csv', batchSize=args.batch_size, returnSubjectID=True)
+
+
+    total_step_test_ADNI = int(math.ceil(len(ADNI_testData) / args.batch_size))
+    total_step_test_AIBL = int(math.ceil(len(AIBL_testData) / args.batch_size))
+    total_step_test_MIRIAD = int(math.ceil(len(MIRIAD_testData) / args.batch_size))
+    total_step_test_OASIS3 = int(math.ceil(len(OASIS3_testData) / args.batch_size))
+    print('Activation Maximization Starts ...')
+
+    activation_maximizer = ActivationMaximizer(model, args.visualize_layer_idx)
+
+    activation_maximizer.visualize_activation(ADNI_testData, total_step_test_ADNI)
+    activation_maximizer.visualize_activation(AIBL_testData, total_step_test_AIBL)
+    activation_maximizer.visualize_activation(MIRIAD_testData, total_step_test_MIRIAD)
+    activation_maximizer.visualize_activation(OASIS3_testData, total_step_test_OASIS3)
+
+
 def main(args):
     train(args)
 
@@ -865,6 +921,8 @@ if __name__ == "__main__":
     parser.add_argument('-n', '--minmax', type=int, default=0, help='whether we use min max pooling')
     parser.add_argument('-f', '--weights_folder', type=str, default='.', help='the folder weights are saved')
     parser.add_argument('-v', '--smap_dir', type=str, default=READ_DIR +'saliency_maps', help='the folder to save saliency maps')
+    parser.add_argument('-w', '--activation_maximization_dir', type=str, default=READ_DIR +'activation_maximizations', help='the folder to save visualized activation maximizations')
+    parser.add_argument('-x', '--visualize_layer_idx', type=int, default=2, help='CNN layer index for visualizing activation maximization')
     parser.add_argument('-d', '--dropBlock', type=int, default=0, help='whether we drop half of the information of the images')
 
     args = parser.parse_args()
@@ -885,4 +943,6 @@ if __name__ == "__main__":
         embedding_extractor(args)
     elif args.action == 4:
         saliency_visualize(args)
+    elif args.action == 5:
+        activation_maximization_visualize(args)
 
