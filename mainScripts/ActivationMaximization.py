@@ -8,17 +8,18 @@ Class to compute and visualize activation maximizations for different CNN filter
 """
 
 class ActivationMaximizer(object):
-    # TODO hyperparameters tuning
-    def __init__(self, model, intermediate_ly_idx, iters=15, lr=10):
+    def __init__(self, model, intermediate_ly_idx, featureIdx, iters=15, lr=10):
         self.model = model
         self.layer_idx = intermediate_ly_idx
+        self.featureIdx = featureIdx
         self.iters = iters
         self.learning_rate = lr
 
     def compute_loss(self, images):
         activation = self.model.extract_embedding(images, self.layer_idx)
         # cropping is done scientifically during MRI data postprocessing
-        return tf.reduce_mean(activation)
+        # return tf.reduce_mean(activation)
+        return activation[:,self.featureIdx]
 
     @tf.function
     def gradient_ascent_step(self, images, learning_rate):

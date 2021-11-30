@@ -27,6 +27,7 @@ else:
     READ_DIR = '/Volumes/Elements/Daniel/AlzheimerData/'
     WEIGHTS_DIR = '/Volumes/Elements/Daniel/weights/'
 
+
 class minMaxPool(tf.keras.layers.Layer):
     def __init__(self, pool_size, strides=1):
         super(minMaxPool, self).__init__()
@@ -372,7 +373,7 @@ def evaluate_crossDataSet(args):
                                      idx_fold=args.idx_fold,
                                      split='test')
 
-    AIBL_testData = MRIDataGenerator_Simple(READ_DIR +'AIBL_CAPS',
+    AIBL_testData = MRIDataGenerator_Simple(READ_DIR + 'AIBL_CAPS',
                                             'aibl_info.csv', batchSize=args.batch_size)
 
     MIRIAD_testData = MRIDataGenerator_Simple(READ_DIR + 'MIRIAD_CAPS',
@@ -450,7 +451,7 @@ def evaluate_crossDataSet_at_individual(args):
         info = {}
         if dataset == 'ADNI':
             tmp = [line.strip() for line in
-                   open(READ_DIR +'ADNI_CAPS/split.pretrained.0.csv')]
+                   open(READ_DIR + 'ADNI_CAPS/split.pretrained.0.csv')]
             for line in tmp:
                 if line.find('test') != -1:
                     items = line.split(',')
@@ -458,21 +459,21 @@ def evaluate_crossDataSet_at_individual(args):
 
         elif dataset == 'AIBL':
             text = [line.strip() for line in
-                    open(READ_DIR +'AIBL_CAPS/aibl_info.csv')]
+                    open(READ_DIR + 'AIBL_CAPS/aibl_info.csv')]
             for line in text:
                 items = line.split(',')
                 info[items[0] + '#' + items[1]] = line
 
         elif dataset == 'MIRIAD':
             text = [line.strip() for line in
-                    open(READ_DIR +'MIRIAD_CAPS/miriad_test_info.csv')]
+                    open(READ_DIR + 'MIRIAD_CAPS/miriad_test_info.csv')]
             for line in text:
                 items = line.split(',')
                 info[items[0] + '#' + items[1]] = line
 
         elif dataset == 'OASIS3':
             text = [line.strip() for line in
-                    open(READ_DIR +'OASIS3_CAPS/oasis3_test_info_2.csv')]
+                    open(READ_DIR + 'OASIS3_CAPS/oasis3_test_info_2.csv')]
             for line in text:
                 items = line.split(',')
                 info[items[0] + '#' + items[1]] = line
@@ -493,19 +494,19 @@ def evaluate_crossDataSet_at_individual(args):
 
     num_classes = 2
 
-    ADNI_testData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
+    ADNI_testData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                      batchSize=args.batch_size,
                                      idx_fold=args.idx_fold,
                                      split='test',
                                      returnSubjectID=True)
 
-    AIBL_testData = MRIDataGenerator_Simple(READ_DIR +'AIBL_CAPS',
+    AIBL_testData = MRIDataGenerator_Simple(READ_DIR + 'AIBL_CAPS',
                                             'aibl_info.csv', batchSize=args.batch_size, returnSubjectID=True)
 
-    MIRIAD_testData = MRIDataGenerator_Simple(READ_DIR +'MIRIAD_CAPS',
+    MIRIAD_testData = MRIDataGenerator_Simple(READ_DIR + 'MIRIAD_CAPS',
                                               'miriad_test_info.csv', batchSize=args.batch_size, returnSubjectID=True)
 
-    OASIS3_testData = MRIDataGenerator_Simple(READ_DIR +'OASIS3_CAPS',
+    OASIS3_testData = MRIDataGenerator_Simple(READ_DIR + 'OASIS3_CAPS',
                                               'oasis3_test_info_2.csv', batchSize=args.batch_size, returnSubjectID=True)
 
     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
@@ -633,7 +634,7 @@ def embedding_extractor(args):
         info = {}
         if dataset == 'ADNI':
             tmp = [line.strip() for line in
-                   open(READ_DIR +'ADNI_CAPS/split.pretrained.0.csv')]
+                   open(READ_DIR + 'ADNI_CAPS/split.pretrained.0.csv')]
             for line in tmp:
                 if line.find(split) != -1:
                     items = line.split(',')
@@ -641,21 +642,21 @@ def embedding_extractor(args):
 
         elif dataset == 'AIBL':
             text = [line.strip() for line in
-                    open(READ_DIR +'AIBL_CAPS/aibl_info.csv')]
+                    open(READ_DIR + 'AIBL_CAPS/aibl_info.csv')]
             for line in text:
                 items = line.split(',')
                 info[items[0] + '#' + items[1]] = line
 
         elif dataset == 'MIRIAD':
             text = [line.strip() for line in
-                    open(READ_DIR +'MIRIAD_CAPS/miriad_test_info.csv')]
+                    open(READ_DIR + 'MIRIAD_CAPS/miriad_test_info.csv')]
             for line in text:
                 items = line.split(',')
                 info[items[0] + '#' + items[1]] = line
 
         elif dataset == 'OASIS3':
             text = [line.strip() for line in
-                    open(READ_DIR +'OASIS3_CAPS/oasis3_test_info_2.csv')]
+                    open(READ_DIR + 'OASIS3_CAPS/oasis3_test_info_2.csv')]
             for line in text:
                 items = line.split(',')
                 info[items[0] + '#' + items[1]] = line
@@ -679,31 +680,31 @@ def embedding_extractor(args):
 
     num_classes = 2
 
-    ADNI_trainData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
-                                     batchSize=args.batch_size,
-                                     idx_fold=args.idx_fold,
-                                     split='train',
-                                     returnSubjectID=True)
+    ADNI_trainData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
+                                      batchSize=args.batch_size,
+                                      idx_fold=args.idx_fold,
+                                      split='train',
+                                      returnSubjectID=True)
 
-    ADNI_valData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
-                                     batchSize=args.batch_size,
-                                     idx_fold=args.idx_fold,
-                                     split='val',
-                                     returnSubjectID=True)
+    ADNI_valData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
+                                    batchSize=args.batch_size,
+                                    idx_fold=args.idx_fold,
+                                    split='val',
+                                    returnSubjectID=True)
 
-    ADNI_testData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
+    ADNI_testData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                      batchSize=args.batch_size,
                                      idx_fold=args.idx_fold,
                                      split='test',
                                      returnSubjectID=True)
 
-    AIBL_testData = MRIDataGenerator_Simple(READ_DIR +'AIBL_CAPS',
+    AIBL_testData = MRIDataGenerator_Simple(READ_DIR + 'AIBL_CAPS',
                                             'aibl_info.csv', batchSize=args.batch_size, returnSubjectID=True)
 
-    MIRIAD_testData = MRIDataGenerator_Simple(READ_DIR +'MIRIAD_CAPS',
+    MIRIAD_testData = MRIDataGenerator_Simple(READ_DIR + 'MIRIAD_CAPS',
                                               'miriad_test_info.csv', batchSize=args.batch_size, returnSubjectID=True)
 
-    OASIS3_testData = MRIDataGenerator_Simple(READ_DIR +'OASIS3_CAPS',
+    OASIS3_testData = MRIDataGenerator_Simple(READ_DIR + 'OASIS3_CAPS',
                                               'oasis3_test_info_2.csv', batchSize=args.batch_size, returnSubjectID=True)
 
     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
@@ -834,19 +835,19 @@ def saliency_visualize(args):
 
     smap_generator = SaliencyMapGenerator(model)
 
-    ADNI_trainData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
+    ADNI_trainData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                       batchSize=args.batch_size,
                                       idx_fold=args.idx_fold,
                                       split='train',
                                       returnSubjectID=True)
 
-    ADNI_valData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
+    ADNI_valData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                     batchSize=args.batch_size,
                                     idx_fold=args.idx_fold,
                                     split='val',
                                     returnSubjectID=True)
 
-    ADNI_testData = MRIDataGenerator(READ_DIR +'ADNI_CAPS',
+    ADNI_testData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                      batchSize=args.batch_size,
                                      idx_fold=args.idx_fold,
                                      split='test',
@@ -870,22 +871,20 @@ def activation_maximization_visualize(args):
     model.load_weights(
         WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
-
     ADNI_testData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
-                                     batchSize=args.batch_size,
+                                     batchSize=1,
                                      idx_fold=args.idx_fold,
                                      split='test',
                                      returnSubjectID=True)
 
     AIBL_testData = MRIDataGenerator_Simple(READ_DIR + 'AIBL_CAPS',
-                                            'aibl_info.csv', batchSize=args.batch_size, returnSubjectID=True)
+                                            'aibl_info.csv', batchSize=1, returnSubjectID=True)
 
     MIRIAD_testData = MRIDataGenerator_Simple(READ_DIR + 'MIRIAD_CAPS',
-                                              'miriad_test_info.csv', batchSize=args.batch_size, returnSubjectID=True)
+                                              'miriad_test_info.csv', batchSize=1, returnSubjectID=True)
 
     OASIS3_testData = MRIDataGenerator_Simple(READ_DIR + 'OASIS3_CAPS',
-                                              'oasis3_test_info_2.csv', batchSize=args.batch_size, returnSubjectID=True)
-
+                                              'oasis3_test_info_2.csv', batchSize=1, returnSubjectID=True)
 
     total_step_test_ADNI = int(math.ceil(len(ADNI_testData) / args.batch_size))
     total_step_test_AIBL = int(math.ceil(len(AIBL_testData) / args.batch_size))
@@ -893,7 +892,7 @@ def activation_maximization_visualize(args):
     total_step_test_OASIS3 = int(math.ceil(len(OASIS3_testData) / args.batch_size))
     print('Activation Maximization Starts ...')
 
-    activation_maximizer = ActivationMaximizer(model, args.visualize_layer_idx)
+    activation_maximizer = ActivationMaximizer(model, args.visualize_layer_idx, args.visualize_feature_idx)
 
     activation_maximizer.visualize_activation(ADNI_testData, total_step_test_ADNI)
     activation_maximizer.visualize_activation(AIBL_testData, total_step_test_AIBL)
@@ -923,10 +922,16 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--pgd', type=float, default=0, help='whether we use pgd (actually fast fgsm)')
     parser.add_argument('-n', '--minmax', type=int, default=0, help='whether we use min max pooling')
     parser.add_argument('-f', '--weights_folder', type=str, default='.', help='the folder weights are saved')
-    parser.add_argument('-v', '--smap_dir', type=str, default=READ_DIR +'saliency_maps', help='the folder to save saliency maps')
-    parser.add_argument('-w', '--activation_maximization_dir', type=str, default=READ_DIR +'activation_maximizations', help='the folder to save visualized activation maximizations')
-    parser.add_argument('-x', '--visualize_layer_idx', type=int, default=2, help='CNN layer index for visualizing activation maximization')
-    parser.add_argument('-d', '--dropBlock', type=int, default=0, help='whether we drop half of the information of the images')
+    parser.add_argument('-v', '--smap_dir', type=str, default=READ_DIR + 'saliency_maps',
+                        help='the folder to save saliency maps')
+    parser.add_argument('-w', '--activation_maximization_dir', type=str, default=READ_DIR + 'activation_maximizations',
+                        help='the folder to save visualized activation maximizations')
+    parser.add_argument('-x', '--visualize_layer_idx', type=int, default=-1,
+                        help='CNN layer index for visualizing activation maximization')
+    parser.add_argument('-z', '--visualize_feature_idx', type=int, default=0,
+                        help='feature visualizing activation maximization')
+    parser.add_argument('-d', '--dropBlock', type=int, default=0,
+                        help='whether we drop half of the information of the images')
 
     args = parser.parse_args()
 
@@ -948,4 +953,3 @@ if __name__ == "__main__":
         saliency_visualize(args)
     elif args.action == 5:
         activation_maximization_visualize(args)
-
