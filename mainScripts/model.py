@@ -303,7 +303,7 @@ def train(args):
     total_step_test = math.ceil(len(testData) / args.batch_size)
 
     if args.continueEpoch != 0:
-        model.load_weights('weights/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+        model.load_weights('weights/weights_fancy_aug/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
     if args.dropBlock:
         # dropblock training is too hard, so let's load the previous one to continue as epoch 1
