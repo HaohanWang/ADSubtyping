@@ -303,11 +303,11 @@ def train(args):
     total_step_test = math.ceil(len(testData) / args.batch_size)
 
     if args.continueEpoch != 0:
-        model.load_weights('weights/weights_fancy_aug/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+        model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
     if args.dropBlock:
         # dropblock training is too hard, so let's load the previous one to continue as epoch 1
-        model.load_weights('weights/weights_regular_training/weights_aug_fold_0_seed_1_epoch_50')
+        model.load_weights(WEIGHTS_DIR + 'weights_regular_training/weights_aug_fold_0_seed_1_epoch_50')
 
     for epoch in range(1, args.epochs + 1):
 
@@ -362,7 +362,7 @@ def train(args):
 
         sys.stdout.flush()
 
-        model.save_weights('weights/weights' + getSaveName(args) + '_epoch_' + str(epoch))
+        model.save_weights(WEIGHTS_DIR + args.weights_folder + 'weights' + getSaveName(args) + '_epoch_' + str(epoch))
 
 
 def evaluate_crossDataSet(args):
@@ -399,7 +399,7 @@ def evaluate_crossDataSet(args):
     total_step_test_OASIS3 = math.ceil(len(OASIS3_testData) / args.batch_size)
 
     model.load_weights(
-        'weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+        WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
     print('Testing Start ...')
 
@@ -527,7 +527,7 @@ def evaluate_crossDataSet_at_individual(args):
     total_step_test_OASIS3 = math.ceil(len(OASIS3_testData) / args.batch_size)
 
     model.load_weights(
-        'weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+        WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
     print('Testing Start ...')
 
@@ -722,7 +722,7 @@ def embedding_extractor(args):
     total_step_test_OASIS3 = math.ceil(len(OASIS3_testData) / args.batch_size)
 
     model.load_weights(
-        'weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+        WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
     print('Testing Start ...')
 
@@ -831,7 +831,7 @@ def saliency_visualize(args):
     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
 
     model.load_weights(
-        'weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+        WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
     smap_generator = SaliencyMapGenerator(model)
 
