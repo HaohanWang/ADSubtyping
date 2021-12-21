@@ -11,14 +11,18 @@ from tensorflow.keras import losses, optimizers, metrics, layers
 from tensorflow_addons.metrics import F1Score
 
 import numpy as np
+import pandas as pd
 import time
 import math
 import json
 import argparse
 import psutil
+from os import makedirs
+from os.path import join
+from cleverhans.tf2.attacks.projected_gradient_descent import projected_gradient_descent
 
 from DataGenerator import MRIDataGenerator, MRIDataGenerator_Simple
-from SaliencyMapGenerator import SaliencyMapGenerator
+# from SaliencyMapGenerator import SaliencyMapGenerator
 from ActivationMaximization import ActivationMaximizer
 
 # mirrored_strategy = tf.distribute.MirroredStrategy(devices=["0", "1"])
@@ -42,6 +46,9 @@ class minMaxPool(tf.keras.layers.Layer):
     def call(self, inputs):
         return self.maxPool(inputs) + self.maxPool(-inputs)
 
+class MinMaxNormalization(object):
+    def __call__(self, images):
+        return (images - images.min()) / (images.max() - images.min())
 
 class MRIImaging3DConvModel(tf.keras.Model):
     def __init__(self, nClass, args):
@@ -937,29 +944,72 @@ def embedding_extractor(args):
     sys.stdout.flush()
 
 
-def saliency_visualize(args):
-    # currently hard-coded to generate saliency maps for only ADNI dataset
+# a direct migration from visualization/saliency.py with TF implementation
+def saliency(args):
+
+    def generate_saliency_map(model, data_gen, total_batch_steps, save_dir, split, extract_features=False):
+        label_list = []
+        sub_list = []
+        sess_list = []
+        prob_list = []
+
+        for i in range(total_batch_steps):
+            images, labels, subject_ids, session_ids = data_gen[i]
+            images = tf.convert_to_tensor(images)
+
+            label_list.extend(labels)
+            sub_list.extend(subject_ids)
+            sess_list.extend(session_ids)
+
+            with tf.GradientTape() as tape:
+                tape.watch(images)
+
+                if extract_features:
+                    outputs = model.extract_embedding(images)
+                else:
+                    outputs = model(images, training=False)
+                prob = tf.keras.activations.softmax(outputs)
+                prob_list.append(prob.numpy())
+
+                loss = losses.CategoricalCrossentropy(from_logits=True)(labels, outputs)
+                # max_idx = tf.argmax(outputs, axis=1)
+                # max_score = outputs[0, max_idx[0]]
+
+            gradients = tape.gradient(loss, images)
+            gradients = gradients.numpy()
+
+            saliency_maps = tf.reduce_max(tf.abs(gradients), axis=-1)
+
+            for sal, subject_id, session_id in zip(saliency_maps, subject_ids, session_ids):
+                makedirs(join(save_dir, split, subject_id), exist_ok=True)
+                np.save(join(save_dir, split, subject_id, session_id + '.npy'), sal)
+
+        df = pd.DataFrame(columns=['participant_id', 'session_id', 'diagnosis', 'prob_AD'])
+        df['participant_id'] = sub_list
+        df['session_id'] = sess_list
+        df['diagnosis'] = list(map(lambda ts: 0 if ts[0] == 1 else 1, label_list))
+        df['prob_AD'] = np.concatenate(prob_list, axis=0)[:, 1]
+        df.to_csv(join(save_dir, split + '_saliency_info.csv'), index=None)
+
+
     num_classes = 2
     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
-
-    model.load_weights(
-        WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
-
-    smap_generator = SaliencyMapGenerator(model)
+    model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
     ADNI_trainData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
+                                      transform=MinMaxNormalization(),
                                       batchSize=args.batch_size,
                                       idx_fold=args.idx_fold,
                                       split='train',
                                       returnSubjectID=True)
-
     ADNI_valData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
+                                    transform=MinMaxNormalization(),
                                     batchSize=args.batch_size,
                                     idx_fold=args.idx_fold,
                                     split='val',
                                     returnSubjectID=True)
-
     ADNI_testData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
+                                     transform=MinMaxNormalization(),
                                      batchSize=args.batch_size,
                                      idx_fold=args.idx_fold,
                                      split='test',
@@ -968,10 +1018,103 @@ def saliency_visualize(args):
     total_step_train = math.ceil(len(ADNI_trainData) / args.batch_size)
     total_step_val = math.ceil(len(ADNI_valData) / args.batch_size)
     total_step_test = math.ceil(len(ADNI_testData) / args.batch_size)
+    makedirs(args.saliency_save_dir, exist_ok=True)
 
-    smap_generator.generate(ADNI_trainData, total_step_train, args.smap_dir + "/adni_train/", True)
-    smap_generator.generate(ADNI_valData, total_step_val, args.smap_dir + "/adni_val/", True)
-    smap_generator.generate(ADNI_testData, total_step_test, args.smap_dir + "/adni_test/", True)
+    generate_saliency_map(model, ADNI_trainData, total_step_train, args.saliency_save_dir, "train", extract_features=args.extract_features)
+    generate_saliency_map(model, ADNI_valData, total_step_val, args.saliency_save_dir, "val", extract_features=args.extract_features)
+    generate_saliency_map(model, ADNI_testData, total_step_test, args.saliency_save_dir, "test", extract_features=args.extract_features)
+
+
+# a direct migration from visualization/visualize.py with TF implementation
+def attack_visualization(args):
+
+    def visualize_single_attack_image(model, data_gen, total_batch_steps, save_dir, split, extract_features=False):
+        label_list = []
+        sub_list = []
+        sess_list = []
+        prob_list = []
+        prob_attack_list = []
+
+        for i in range(total_batch_steps):
+            images, labels, subject_ids, session_ids = data_gen[i]
+
+            images = tf.convert_to_tensor(images)
+
+            images_attack = projected_gradient_descent(model, images, eps=0.05, eps_iter=0.00125, nb_iter=10, norm=np.inf, rand_init=True)
+
+            label_list.extend(labels)
+            sub_list.extend(subject_ids)
+            sess_list.extend(session_ids)
+
+            with tf.GradientTape() as tape:
+                tape.watch(images)
+
+                if extract_features:
+                    outputs = model.extract_embedding(images)
+                    outputs_attack = model.extract_embedding(images_attack)
+                else:
+                    outputs = model(images, training=True)
+                    outputs_attack = model(images_attack, training=True)
+
+                prob = tf.keras.activations.softmax(outputs)
+                prob_attack = tf.keras.activations.softmax(outputs_attack)
+                prob_list.append(prob.numpy())
+                prob_attack_list.append(prob_attack.numpy())
+
+            images_diff_abs = tf.abs(tf.squeeze(images_attack) - tf.squeeze(images)).numpy()
+            for diff, subject_id, session_id in zip(images_diff_abs, subject_ids, session_ids):
+                makedirs(join(save_dir, split, subject_id), exist_ok=True)
+                np.save(join(save_dir, split, subject_id, session_id + '.npy'), diff)
+
+        prob_list = np.vstack(prob_list)
+        prob_attack_list = np.vstack(prob_attack_list)
+
+        df = pd.DataFrame(columns=['participant_id', 'session_id', 'diagnosis', 'prob_AD', 'prob_AD_attack'])
+        df['participant_id'] = sub_list
+        df['session_id'] = sess_list
+        df['diagnosis'] = list(map(lambda ts: 0 if ts[0] == 1 else 1, label_list))
+        df['prob_AD'] = prob_list[:, 1]
+        df['prob_AD_attack'] = prob_attack_list[:, 1]
+
+        df.to_csv(join(save_dir, split + '_attack_info.csv'), index=None)
+
+
+    num_classes = 2
+    model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+    model.load_weights(
+        WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+
+    batch_size = args.batch_size // 2
+
+    ADNI_trainData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
+                                      transform=MinMaxNormalization(),
+                                      batchSize=batch_size,
+                                      idx_fold=args.idx_fold,
+                                      split='train',
+                                      returnSubjectID=True)
+
+    ADNI_valData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
+                                    transform=MinMaxNormalization(),
+                                    batchSize=batch_size,
+                                    idx_fold=args.idx_fold,
+                                    split='val',
+                                    returnSubjectID=True)
+
+    ADNI_testData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
+                                     transform=MinMaxNormalization(),
+                                     batchSize=batch_size,
+                                     idx_fold=args.idx_fold,
+                                     split='test',
+                                     returnSubjectID=True)
+
+    total_step_train = math.ceil(len(ADNI_trainData) / batch_size)
+    total_step_val = math.ceil(len(ADNI_valData) / batch_size)
+    total_step_test = math.ceil(len(ADNI_testData) / batch_size)
+    makedirs(args.attack_visualization_save_dir, exist_ok=True)
+
+    visualize_single_attack_image(model, ADNI_trainData, total_step_train, args.attack_visualization_save_dir, 'train', extract_features=args.extract_features)
+    visualize_single_attack_image(model, ADNI_valData, total_step_val, args.attack_visualization_save_dir, 'val', extract_features=args.extract_features)
+    visualize_single_attack_image(model, ADNI_testData, total_step_test, args.attack_visualization_save_dir, 'test', extract_features=args.extract_features)
 
 
 def activation_maximization_visualize(args):
@@ -1045,8 +1188,12 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--pgd', type=float, default=0, help='whether we use pgd (actually fast fgsm)')
     parser.add_argument('-n', '--minmax', type=int, default=0, help='whether we use min max pooling')
     parser.add_argument('-f', '--weights_folder', type=str, default='.', help='the folder weights are saved')
-    parser.add_argument('-v', '--smap_dir', type=str, default=READ_DIR + 'saliency_maps',
+    parser.add_argument('-v', '--saliency_save_dir', type=str, default=READ_DIR + 'saliency_maps',
                         help='the folder to save saliency maps')
+    parser.add_argument('-j', '--extract_features', type=int, default=0,
+                        help='whether the model should exclude the last FC layer')
+    parser.add_argument('-k', '--attack_visualization_save_dir', type=str, default=READ_DIR + 'attack_visualization',
+                        help='the folder to save adversarial attack visualization')
     parser.add_argument('-w', '--activation_maximization_dir', type=str, default=READ_DIR + 'activation_maximizations',
                         help='the folder to save visualized activation maximizations')
     parser.add_argument('-z', '--visualize_feature_idx', type=int, default=0,
@@ -1054,7 +1201,7 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--dropBlock', type=int, default=0,
                         help='whether we drop half of the information of the images')
     parser.add_argument('-r', '--worst_sample', type=int, default=0, help='whether we use min max pooling')
-    parser.add_argument('-k', '--consistency', type=float, default=0, help='whether we use min max pooling')
+    parser.add_argument('-y', '--consistency', type=float, default=0, help='whether we use min max pooling')
     parser.add_argument('-t', '--gpu', type=str, default=0,
                         help='specify maximum GPU ID we want to distribute the training to')
 
@@ -1075,6 +1222,8 @@ if __name__ == "__main__":
     elif args.action == 3:
         embedding_extractor(args)
     elif args.action == 4:
-        saliency_visualize(args)
+        saliency(args)
     elif args.action == 5:
+        attack_visualization(args)
+    elif args.action == 6:
         activation_maximization_visualize(args)

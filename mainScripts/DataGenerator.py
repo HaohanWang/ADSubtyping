@@ -73,17 +73,26 @@ class MRIDataGenerator(keras.utils.Sequence):
                         images = self.dataAugmentation.augmentData_batch_erasing(images, self.dropBlock_iterationCount)
                         self.dropBlock_iterationCount += 1
                     images = self.dataAugmentation.augmentData_batch(images)
+
+                if self.transform:
+                    images = self.transform(images)
                 return images, labels
             else:
                 images, labels, subjectLists, sessionLists = self._load_batch_image_test(
                     idx)  # if subject ID is required, these can be saved as the test list
+                if self.transform:
+                    images = self.transform(images)
                 return images, labels, subjectLists, sessionLists
         else:
             if self.returnSubjectID:
                 images, labels, subjectLists, sessionLists = self._load_batch_image_test(idx)
+                if self.transform:
+                    images = self.transform(images)
                 return images, labels, subjectLists, sessionLists
             else:
                 images, labels = self._load_batch_image_test(idx)
+                if self.transform:
+                    images = self.transform(images)
                 return images, labels
 
     def parse_csv_file(self):

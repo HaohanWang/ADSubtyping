@@ -13,6 +13,12 @@ from glob import glob
 import nibabel as nib
 
 import matplotlib.pyplot as plt
+import psutil
+
+if psutil.Process().username() == 'haohanwang':
+    BASE_DIR = '/media/haohanwang/Elements/'
+else:
+    BASE_DIR = '/home/ec2-user/alzstudy/AlzheimerData/'
 
 
 def sub2adni(sub):
@@ -20,8 +26,11 @@ def sub2adni(sub):
 
 
 def df2path(df, i):
-    return join('/media/haohanwang/Elements/saliency_map_dropblock2', df.split.iloc[i], df.participant_id.iloc[i], df.session_id.iloc[i] + '.npy')
-
+    # return join('/media/haohanwang/Elements/saliency_map_dropblock2', df.split.iloc[i], df.participant_id.iloc[i], df.session_id.iloc[i] + '.npy')
+    # return join(BASE_DIR + 'saliency_map_torch', df.split.iloc[i], df.participant_id.iloc[i],
+    #             df.session_id.iloc[i] + '.npy')
+    return join(BASE_DIR + 'new_saliency_maps_ckp1', df.split.iloc[i], df.participant_id.iloc[i],
+                df.session_id.iloc[i] + '.npy')
 
 def path2subsess(path):
     sub = re.search(r'sub-[a-zA-Z0-9]{1,}', path).group(0)
@@ -30,7 +39,7 @@ def path2subsess(path):
 
 
 def subsess2path(sub, sess):
-    return join('/media/haohanwang/Elements/ADNI_CAPS', 'subjects', sub, sess, 'deeplearning_prepare_data', 'image_based', 't1_linear', \
+    return join(BASE_DIR + 'ADNI_CAPS', 'subjects', sub, sess, 'deeplearning_prepare_data', 'image_based', 't1_linear', \
                 sub + '_' + sess + '_' + 'T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt')
 
 
@@ -71,15 +80,23 @@ def drawFromPath(path, label, save_dir='2d_view', order=None):
 
     saliency_cmap = 'jet'
     saliency_alpha = 0.3
-    ex_sal = np.load(path)
+
+    try:
+        ex_sal = np.load(path)
+    except FileNotFoundError:
+        print("Subject example not found in {}".format(path))
+        return
     #     im1 = ax[0].imshow(ex_sal[sagittal_idx, :, :], cmap=saliency_cmap, alpha=saliency_alpha)
     #     im2 = ax[1].imshow(ex_sal[:, coronal_idx, :], cmap=saliency_cmap, alpha=saliency_alpha)
     #     im3 = ax[2].imshow(ex_sal[:, :, axial_idx], cmap=saliency_cmap, alpha=saliency_alpha)
     saliencyDraw(ax[0], ex_sal[sagittal_idx, :, :], saliency_cmap, saliency_alpha)
     saliencyDraw(ax[1], ex_sal[:, coronal_idx, :], saliency_cmap, saliency_alpha)
     saliencyDraw(ax[2], ex_sal[:, :, axial_idx], saliency_cmap, saliency_alpha)
+    # saliencyDraw(ax[0], ex_sal[sagittal_idx, :, :], view_cmap, saliency_alpha)
+    # saliencyDraw(ax[1], ex_sal[:, coronal_idx, :], view_cmap, saliency_alpha)
+    # saliencyDraw(ax[2], ex_sal[:, :, axial_idx], view_cmap, saliency_alpha)
 
-    # os.makedirs(save_dir)
+    os.makedirs(save_dir, exist_ok=True)
     if order is None:
         fig.savefig(join(save_dir, '_'.join([label, sub, sess, '2d_view.png'])))
         fig.clf()
@@ -88,26 +105,27 @@ def drawFromPath(path, label, save_dir='2d_view', order=None):
         fig.clf()
 
 if __name__ == '__main__':
-    subs = glob('/media/haohanwang/Elements/ADNI_CAPS/subjects/*')
+    subs = glob(BASE_DIR + 'ADNI_CAPS/subjects/*')
 
-    print subs[:5]
+    print(subs[:5])
 
     ex = imgfromsubsess('sub-ADNI094S0711', 'ses-M00')
     plt.imshow(ex[:,:,90], cmap='gray')
 
-    snp_subs = np.loadtxt('SNP/samples.txt', dtype=str)
+    snp_subs = np.loadtxt(BASE_DIR + 'SNP/samples.txt', dtype=str)
     snp_subs = np.array(list(map(sub2adni, snp_subs)))
 
-    df = pd.read_csv('/media/haohanwang/Elements/ADNI_CAPS/split.stratified.0.csv')
+    df = pd.read_csv(BASE_DIR +'ADNI_CAPS/split.stratified.0.csv')
     tmp = df[df['participant_id'].isin(snp_subs)]
     tmp = tmp.sort_values(by=['session_id'], ascending=False)
     tmp = tmp.drop_duplicates(subset=['participant_id'])
     df_snp = tmp.reset_index(drop=True)
 
-    train_df = pd.read_csv('/media/haohanwang/Elements/saliency_map_dropblock2/train_sailency_info.csv')
-    test_df = pd.read_csv('/media/haohanwang/Elements/saliency_map_dropblock2/test_sailency_info.csv')
-    val_df = pd.read_csv('/media/haohanwang/Elements/saliency_map_dropblock2/val_sailency_info.csv')
-    df_pred = pd.concat([train_df, test_df, val_df])
+    train_df = pd.read_csv(BASE_DIR + 'new_saliency_maps_ckp1/train_saliency_info.csv')
+    # test_df = pd.read_csv(BASE_DIR + 'new_saliency_maps_ckp1/test_saliency_info.csv')
+    val_df = pd.read_csv(BASE_DIR + 'new_saliency_maps_ckp1/val_saliency_info.csv')
+    # df_pred = pd.concat([train_df, test_df, val_df])
+    df_pred = pd.concat([train_df, val_df])
     df_pred = df_pred.reset_index(drop=True)
 
     df_snp = df_snp.merge(df_pred, how='inner', on=['participant_id', 'session_id'])
@@ -121,8 +139,8 @@ if __name__ == '__main__':
     snp_correct_labels = df_snp_correct.diagnosis_x.values
 
     for p, l in tqdm(zip(snp_correct_paths, snp_correct_labels)):
-        print p
-        print l
-        drawFromPath(p,l,'2d_view_dropblock2')
+        print(p)
+        print(l)
+        drawFromPath(p,l, BASE_DIR + '2d_new_saliency_ckp1')
 
 
