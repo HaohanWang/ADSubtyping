@@ -5,6 +5,7 @@ import numpy as np
 from os.path import join
 
 from matplotlib import pyplot as plt
+import psutil
 from scipy.stats import ttest_ind
 import time
 import cv2
@@ -16,7 +17,11 @@ def loadSmapData(folderPath, subjectID, sessionID):
 
     return smap.reshape([169, 208, 179])
 
-img_dir = '/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS'
+
+if psutil.Process().username() == 'haohanwang':
+    img_dir = '/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS'
+else:
+    img_dir = '/home/ec2-user/alzstudy/AlzheimerData/ADNI_CAPS'
 
 def loadOneSample_subject_session(subjectID, sessID):
 
