@@ -22,7 +22,7 @@ from model import get_model
 
 class MinMaxNormalization(object):
     """Normalizes a tensor between 0 and 1"""
-    def __call__(self, image): 
+    def __call__(self, image):
         return (image - image.min()) / (image.max() - image.min())
 
 def model_checkpoint(checkpoint_path, feature=None):
