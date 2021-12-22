@@ -21,7 +21,7 @@ def loadSmapData(folderPath, subjectID, sessionID):
 if psutil.Process().username() == 'haohanwang':
     img_dir = '/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS'
 else:
-    img_dir = '/home/ec2-user/alzstudy/AlzheimerData/ADNI_CAPS'
+    img_dir = '/home/ec2-user/alzstudy/saliency_maps/adni_train'
 
 def loadOneSample_subject_session(subjectID, sessID):
 

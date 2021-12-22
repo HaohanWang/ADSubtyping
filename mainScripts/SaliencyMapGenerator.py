@@ -2,12 +2,6 @@ import tensorflow as tf
 from tensorflow.keras import losses
 
 import numpy as np
-import psutil
-
-if psutil.Process().username() == 'haohanwang':
-    DEFAULT_SAVE_PATH = '/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS'
-else:
-    DEFAULT_SAVE_PATH = '/home/ec2-user/alzstudy/saliency_maps'
 
 
 class SaliencyMapGenerator(object):
@@ -15,7 +9,7 @@ class SaliencyMapGenerator(object):
         self.model = model
 
 # generic class to generate saliency map for all subjects in the (batched) dataset
-    def generate(self, dataset, total_batch_steps, save_dir=DEFAULT_SAVE_PATH, subject_ids_included=False):
+    def generate(self, dataset, total_batch_steps, save_dir, subject_ids_included=False):
         subject_ids = None
         for i in range(total_batch_steps):
             if subject_ids_included:
