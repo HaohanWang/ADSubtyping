@@ -19,7 +19,7 @@ class ActivationMaximizer(object):
         activation = self.model.extract_embedding(images, self.layer_idx)
         # cropping is done scientifically during MRI data postprocessing
         # return tf.reduce_mean(activation)
-        return activation[:,self.featureIdx]
+        return activation[:, self.featureIdx]
 
     @tf.function
     def gradient_ascent_step(self, images, learning_rate):

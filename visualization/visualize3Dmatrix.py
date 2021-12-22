@@ -1,6 +1,6 @@
 __author__ = 'Haohan Wang'
 
-from utility.loadResults import loadNPYFile
+import utility.loadResults as utils
 
 import ipyvolume as ipv
 
@@ -9,7 +9,7 @@ import numpy as np
 from os.path import join
 
 def visualizeData(subj, sess, filePath):
-    data = loadNPYFile(subj, sess, filePath)
+    data = utils.loadNPYFile(subj, sess, filePath)
 
     # mini = np.min(data)
     # maxi = np.max(data)
