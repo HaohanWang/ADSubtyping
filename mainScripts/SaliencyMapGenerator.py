@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.keras import losses
 
 import numpy as np
-import matplotlib as plt
+import psutil
 
 if psutil.Process().username() == 'haohanwang':
     DEFAULT_SAVE_PATH = '/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS'
