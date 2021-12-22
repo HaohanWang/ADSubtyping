@@ -24,7 +24,7 @@ if psutil.Process().username() == 'haohanwang':
     READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
     WEIGHTS_DIR = 'weights/'
 else:
-    READ_DIR = '/home/ec2-user/alzstudy/AlzheimerData/'
+    READ_DIR = '/home/ec2-user/alzstudy/AlzheimerDataAlzheimerData/'
     WEIGHTS_DIR = '/home/ec2-user/alzstudy/weights/'
 
 
