@@ -4,8 +4,10 @@ from tensorflow.keras import losses
 import numpy as np
 import matplotlib as plt
 
-# TODO can to be modified / refactored to adapt to local mounted filesystem and save in Subjects' dir
-DEFAULT_SAVE_PATH = "./saliency_maps/"
+if psutil.Process().username() == 'haohanwang':
+    DEFAULT_SAVE_PATH = '/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS'
+else:
+    DEFAULT_SAVE_PATH = '/home/ec2-user/alzstudy/saliency_maps/'
 
 
 class SaliencyMapGenerator(object):
