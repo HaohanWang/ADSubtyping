@@ -7,7 +7,7 @@ import psutil
 if psutil.Process().username() == 'haohanwang':
     DEFAULT_SAVE_PATH = '/media/haohanwang/Storage/AlzheimerImagingData/ADNI_CAPS'
 else:
-    DEFAULT_SAVE_PATH = '/home/ec2-user/alzstudy/saliency_maps/'
+    DEFAULT_SAVE_PATH = '/home/ec2-user/alzstudy/saliency_maps'
 
 
 class SaliencyMapGenerator(object):
