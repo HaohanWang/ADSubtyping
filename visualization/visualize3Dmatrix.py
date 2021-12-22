@@ -31,7 +31,7 @@ def visualizeData(subj, sess, filePath):
 
 
 if __name__ == '__main__':
-    subj = 'sub-ADNI002S1018'
+    subj = 'sub-ADNI002S0619'
     sess = 'ses-M00'
     filePath = '/home/ec2-user/alzstudy/saliency_maps/adni_train/vanilla/'
     visualizeData(subj, sess, filePath)
