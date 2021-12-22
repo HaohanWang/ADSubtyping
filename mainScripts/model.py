@@ -878,9 +878,9 @@ def saliency_visualize(args):
     total_step_val = math.ceil(len(ADNI_valData) / args.batch_size)
     total_step_test = math.ceil(len(ADNI_testData) / args.batch_size)
 
-    smap_generator.generate(ADNI_trainData, total_step_train, args.smap_dir + "/adni_train/", True)
-    smap_generator.generate(ADNI_valData, total_step_val, args.smap_dir + "/adni_val/", True)
-    smap_generator.generate(ADNI_testData, total_step_test, args.smap_dir + "/adni_test/", True)
+    smap_generator.generate(ADNI_trainData, total_step_train, args.smap_dir + "/adni_train", True)
+    smap_generator.generate(ADNI_valData, total_step_val, args.smap_dir + "/adni_val", True)
+    smap_generator.generate(ADNI_testData, total_step_test, args.smap_dir + "/adni_test", True)
 
 
 def activation_maximization_visualize(args):
