@@ -17,8 +17,8 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 from tensorboardX import SummaryWriter
 
-from dataMangement.dataset import get_dataloader
-from dataMangement.transform import get_transform, MinMaxNormalization
+from dataManagement.dataset import get_dataloader
+from dataManagement.transform import get_transform, MinMaxNormalization
 from model import get_model
 from optimizer import get_optimizer
 
