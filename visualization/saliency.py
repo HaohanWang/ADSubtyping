@@ -114,7 +114,8 @@ def get_dataloader(split, batch_size, is_train=False, num_worker=4, transform=Mi
 if __name__ == "__main__":
     
     batch_size = 1
-    save_dir = "saliency_map_dropblock"
+    # save_dir = "saliency_map_dropblock"
+    save_dir = "saliency_map_torch"
     makedirs(save_dir, exist_ok=True)
 
     # model = model_checkpoint("results/policy_eps5e-3_lr1e-5_weight_dropblock/checkpoint/epoch_0010.pth")
