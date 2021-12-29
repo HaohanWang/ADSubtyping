@@ -16,8 +16,8 @@ from glob import glob
 from tqdm import tqdm
 import math
 
-from dataManagement.dataset import MRIDataset
-from mainScripts_torch.model import get_model
+import dataManagement.dataset  as ds
+import mainScripts_torch.model as torch_model
 
 
 class MinMaxNormalization(object):
@@ -45,7 +45,7 @@ def model_checkpoint(checkpoint_path, feature=None):
     config.model = edict()
     config.model.name = 'Conv5_FC3'
     config.model.params = None
-    model = get_model(config)
+    model = torch_model.get_model(config)
     model.load_state_dict(checkpoint_dict)
     
     if feature:
@@ -102,7 +102,7 @@ def saliency_map(model, dataloader, batch_size, save_dir, split):
 
 
 def get_dataloader(split, batch_size, is_train=False, num_worker=4, transform=MinMaxNormalization(), idx_fold=0):
-    dataset = MRIDataset('ADNI_CAPS',split = split, transform=transform, idx_fold=idx_fold)
+    dataset = ds.MRIDataset('ADNI_CAPS',split = split, transform=transform, idx_fold=idx_fold)
     dataloader = DataLoader(dataset,
                             shuffle=is_train,
                             batch_size=batch_size,
