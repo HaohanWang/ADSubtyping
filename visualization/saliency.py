@@ -102,7 +102,7 @@ def saliency_map(model, dataloader, batch_size, save_dir, split):
 
 
 def get_dataloader(split, batch_size, is_train=False, num_worker=4, transform=MinMaxNormalization(), idx_fold=0):
-    dataset = ds.MRIDataset('ADNI_CAPS',split = split, transform=transform, idx_fold=idx_fold)
+    dataset = ds.MRIDataset('/home/ec2-user/alzstudy/AlzheimerData/ADNI_CAPS',split = split, transform=transform, idx_fold=idx_fold)
     dataloader = DataLoader(dataset,
                             shuffle=is_train,
                             batch_size=batch_size,
