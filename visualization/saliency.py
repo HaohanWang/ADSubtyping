@@ -16,7 +16,7 @@ from glob import glob
 from tqdm import tqdm
 import math
 
-from dataMangement import dataset
+from dataMangement.dataset import MRIDataset
 from mainScripts_torch.model import get_model
 
 
