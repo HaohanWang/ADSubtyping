@@ -16,8 +16,8 @@ from glob import glob
 from tqdm import tqdm
 import math
 
-from dataset import MRIDataset
-from model import get_model
+from dataMangement import dataset
+from mainScripts_torch.model import get_model
 
 
 class MinMaxNormalization(object):

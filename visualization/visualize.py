@@ -16,8 +16,8 @@ from glob import glob
 from tqdm import tqdm
 import math
 
-from dataset import MRIDataset
-from model import get_model
+from dataMangement import dataset
+from mainScripts_torch.model import get_model
 
 
 class MinMaxNormalization(object):
@@ -114,7 +114,7 @@ def single_attack_image(model, attack, dataloader, batch_size, save_dir, split):
 
 
 def get_dataloader(split, batch_size, is_train=False, num_worker=4, transform=MinMaxNormalization(), idx_fold=0):
-    dataset = MRIDataset('ADNI_CAPS',split = split, transform=transform, idx_fold=idx_fold)
+    dataset = dataset.MRIDataset('ADNI_CAPS',split = split, transform=transform, idx_fold=idx_fold)
     dataloader = DataLoader(dataset,
                             shuffle=is_train,
                             batch_size=batch_size,
