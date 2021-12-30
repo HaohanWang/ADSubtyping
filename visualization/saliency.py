@@ -18,6 +18,7 @@ import math
 
 import dataManagement.dataset  as ds
 import mainScripts_torch.model as torch_model
+import torch.nn as nn
 
 
 class MinMaxNormalization(object):
