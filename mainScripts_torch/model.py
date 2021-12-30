@@ -133,7 +133,6 @@ class Conv5_FC3(nn.Module):
         x = self.features(x)
         x = self.classifier_ori(x)
 
-        print("forward ori")
         return x
     
     def forward_dropblock(self, x):
@@ -142,15 +141,14 @@ class Conv5_FC3(nn.Module):
         x = self.features(x)
         x = self.classifier_dropblock(x)
 
-        print("forward dropblock")
         return x
 
     def forward(self, x):
-
-        if self.dropblock:
-            return self.forward_dropblock(x)
-        else:
-            return self.forward_ori(x)
+        return self.forward_dropblock(x)
+        # if self.dropblock:
+        #
+        # else:
+        #     return self.forward_ori(x)
 
 def get_model(config):
     print('model name:', config.model.name)
