@@ -139,10 +139,12 @@ class Conv5_FC3(nn.Module):
     def forward_dropblock(self, x):
 
         self.drop_block.step()
-        # x = self.features(x)
+        x = self.features(x)
 
         print("x after self.features shape = ", x.shape)
+        x = x.reshape(self.flattened_shape)
 
+        print("x after flatten shape = ", x.shape)
         x = self.classifier_dropblock(x)
 
         print("forward dropblock")
