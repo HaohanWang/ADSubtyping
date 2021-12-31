@@ -17,7 +17,7 @@ model:
     convKernel2: 3
     poolKernel2: 2
     poolKernel3: 2
-    fcSize1: 32256
+    fcSize1: 128
     fcSize2: 1300
 
 train:
