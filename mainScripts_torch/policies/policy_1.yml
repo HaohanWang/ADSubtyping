@@ -9,16 +9,16 @@ data:
 model:
   name: 'Conv5_FC3'
   params:
-#    dropout: 0.3
-#    dropblock: False
-#    blocksize: 10
-#    convKernel1: 5
-#    poolKernel1: 2
-#    convKernel2: 3
-#    poolKernel2: 3
-#    poolKernel3: 2
-#    fcSize1: 3456
-#    fcSize2: 2048
+    dropout: 0.3
+    dropblock: False
+    blocksize: 10
+    convKernel1: 5
+    poolKernel1: 2
+    convKernel2: 3
+    poolKernel2: 3
+    poolKernel3: 2
+    fcSize1: 3456
+    fcSize2: 2048
 
 train:
   dir: ../results/checkpoints/policy1_lr1e-4/
