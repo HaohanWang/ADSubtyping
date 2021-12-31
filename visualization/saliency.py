@@ -42,10 +42,13 @@ def model_checkpoint(checkpoint_path, feature=None):
                 checkpoint_dict[k] = v
             else:
                 checkpoint_dict['feature_extractor.' + k] = v
-    config = edict()
-    config.model = edict()
-    config.model.name = 'Conv5_FC3'
-    config.model.params = None
+
+    if config == None:
+        config = edict()
+        config.model = edict()
+        config.model.name = 'Conv5_FC3'
+        config.model.params = None
+    print("Config: ", config)
     model = torch_model.get_model(config)
     model.load_state_dict(checkpoint_dict)
     
