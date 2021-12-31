@@ -18,6 +18,8 @@ import math
 
 import dataManagement.dataset  as ds
 import mainScripts_torch.model as torch_model
+import utility.config_utils as config_utils
+
 import torch.nn as nn
 
 
@@ -43,12 +45,10 @@ def model_checkpoint(checkpoint_path, feature=None):
             else:
                 checkpoint_dict['feature_extractor.' + k] = v
 
-    if config == None:
-        config = edict()
-        config.model = edict()
-        config.model.name = 'Conv5_FC3'
-        config.model.params = None
-    print("Config: ", config)
+    config = edict()
+    config.model = edict()
+    config.model.name = 'Conv5_FC3'
+    config.model.params = None
     model = torch_model.get_model(config)
     model.load_state_dict(checkpoint_dict)
     
@@ -123,6 +123,8 @@ if __name__ == "__main__":
     makedirs(save_dir, exist_ok=True)
 
     # model = model_checkpoint("results/policy_eps5e-3_lr1e-5_weight_dropblock/checkpoint/epoch_0010.pth")
+
+    config = config_utils.load("/home/ec2-user/alzstudy/code/mainScripts_torch/policies/policy_2.yml")
     model = model_checkpoint("/home/ec2-user/alzstudy/checkpoints/policy2_1e-5_dr_0.5_eps_5e-3_seed_0/checkpoint/epoch_0010.pth")
     model.cuda()
     dataloaders = {split:get_dataloader(split, batch_size=batch_size)

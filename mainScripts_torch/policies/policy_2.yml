@@ -8,17 +8,17 @@ data:
 
 model:
   name: 'Conv5_FC3'
-#  params:
-#    dropout: 0.5
-#    dropblock: False
-#    blocksize: 10
-#    convKernel1: 3
-#    poolKernel1: 2
-#    convKernel2: 3
-#    poolKernel2: 2
-#    poolKernel3: 2
-#    fcSize1: 32256
-#    fcSize2: 1300
+  params:
+    dropout: 0.5
+    dropblock: False
+    blocksize: 10
+    convKernel1: 3
+    poolKernel1: 2
+    convKernel2: 3
+    poolKernel2: 2
+    poolKernel3: 2
+    fcSize1: 32256
+    fcSize2: 1300
 
 train:
   dir: ../results/checkpoints/policy2_1e-4_dr_0.5_eps_5e-3_dropblock/
