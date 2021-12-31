@@ -134,7 +134,7 @@ if __name__ == "__main__":
 
     # model = model_checkpoint("results/policy_eps5e-3_lr1e-5_weight/checkpoint/epoch_0017.pth")
     config = config_utils.load("/home/ec2-user/alzstudy/code/AlzheimerDiseaseUnderstanding/mainScripts_torch/policies/policy_2.yml")
-    model = model_checkpoint("/home/ec2-user/alzstudy/checkpoints/policy2_1e-5_dr_0.5_eps_5e-3_seed_0/checkpoint/epoch_0010.pth")
+    model = model_checkpoint("/home/ec2-user/alzstudy/checkpoints/policy2_1e-5_dr_0.5_eps_5e-3_seed_0/checkpoint/epoch_0010.pth", None, config)
     model.cuda()
     attack = torchattacks.PGD(model, eps = 0.05, alpha = 0.00125, iters=10, random_start=True)
     dataloaders = {split:get_dataloader(split, batch_size=batch_size)
