@@ -140,7 +140,6 @@ class Conv5_FC3(nn.Module):
         print("x shape = ", x.shape)
         self.drop_block.step()
 
-        x = x.reshape(self.flattened_shape)
         x = self.features(x)
 
         print("x after flatten shape = ", x.shape)
@@ -150,11 +149,10 @@ class Conv5_FC3(nn.Module):
         return x
 
     def forward(self, x):
-        return self.forward_dropblock(x)
-        # if self.dropblock:
-        #
-        # else:
-        #     return self.forward_ori(x)
+        if self.dropblock:
+            return self.forward_dropblock(x)
+        else:
+            return self.forward_ori(x)
 
 def get_model(config):
     print('model name:', config.model.name)
