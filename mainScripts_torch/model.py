@@ -129,23 +129,17 @@ class Conv5_FC3(nn.Module):
         self.flattened_shape = [-1, 128, 6, 7, 6]
 
     def forward_ori(self, x):
-        
         x = self.features(x)
         x = self.classifier_ori(x)
 
-        print("forward ori")
         return x
     
     def forward_dropblock(self, x):
-        print("x shape = ", x.shape)
         self.drop_block.step()
 
         x = self.features(x)
-
-        print("x after flatten shape = ", x.shape)
         x = self.classifier_dropblock(x)
 
-        print("forward dropblock")
         return x
 
     def forward(self, x):
