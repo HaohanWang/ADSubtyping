@@ -28,7 +28,7 @@ class MinMaxNormalization(object):
     def __call__(self, image): 
         return (image - image.min()) / (image.max() - image.min())
 
-def model_checkpoint(checkpoint_path, feature=None):
+def model_checkpoint(checkpoint_path, feature=None, config=None):
     checkpoint = torch.load(checkpoint_path)
     checkpoint_dict = {}
     for k, v in checkpoint['state_dict'].items():
@@ -44,11 +44,12 @@ def model_checkpoint(checkpoint_path, feature=None):
                 checkpoint_dict[k] = v
             else:
                 checkpoint_dict['feature_extractor.' + k] = v
-
-    config = edict()
-    config.model = edict()
-    config.model.name = 'Conv5_FC3'
-    config.model.params = None
+    if config is None:
+        config = edict()
+        config.model = edict()
+        config.model.name = 'Conv5_FC3'
+        config.model.params = None
+    print("Loaded config = ", config)
     model = torch_model.get_model(config)
     model.load_state_dict(checkpoint_dict)
     
@@ -125,7 +126,7 @@ if __name__ == "__main__":
     # model = model_checkpoint("results/policy_eps5e-3_lr1e-5_weight_dropblock/checkpoint/epoch_0010.pth")
 
     config = config_utils.load("/home/ec2-user/alzstudy/code/AlzheimerDiseaseUnderstanding/mainScripts_torch/policies/policy_2.yml")
-    model = model_checkpoint("/home/ec2-user/alzstudy/checkpoints/policy2_1e-5_dr_0.5_eps_5e-3_seed_0/checkpoint/epoch_0010.pth")
+    model = model_checkpoint("/home/ec2-user/alzstudy/checkpoints/policy2_1e-5_dr_0.5_eps_5e-3_seed_0/checkpoint/epoch_0010.pth", config)
     model.cuda()
     dataloaders = {split:get_dataloader(split, batch_size=batch_size)
                    for split in ['train', 'test', 'val']}
