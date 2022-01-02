@@ -960,8 +960,8 @@ def attack_visualization(args):
                     outputs = model.extract_embedding(images)
                     outputs_attack = model.extract_embedding(images_attack)
                 else:
-                    outputs = model(images, training=True)
-                    outputs_attack = model(images, training=True)
+                    outputs = model(images)
+                    outputs_attack = model(images)
 
                 prob = tf.keras.activations.softmax(outputs)
                 prob_attack = tf.keras.activations.softmax(outputs_attack)
