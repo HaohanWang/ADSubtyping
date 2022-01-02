@@ -92,6 +92,8 @@ def single_attack_image(model, attack, dataloader, batch_size, save_dir, split):
                 prob_list.append(prob.detach().cpu().numpy())
                 prob_attack_list.append(prob_attack.detach().cpu().numpy())
 
+            print("Image attack torch shape = ", images_attack.shape)
+
             images_diff_abs = torch.abs(images_attack.squeeze(1)-images.squeeze(1)).detach().cpu().numpy()
             for j, diff in enumerate(images_diff_abs):
                 makedirs(join(save_dir, split, subs[j]), exist_ok=True)
@@ -136,7 +138,7 @@ if __name__ == "__main__":
     config = config_utils.load("/home/ec2-user/alzstudy/code/AlzheimerDiseaseUnderstanding/mainScripts_torch/policies/policy_2.yml")
     model = model_checkpoint("/home/ec2-user/alzstudy/checkpoints/policy2_1e-5_dr_0.5_eps_5e-3_seed_0/checkpoint/epoch_0010.pth", None, config)
     model.cuda()
-    attack = torchattacks.PGD(model, eps = 0.05, alpha = 0.00125, steps=10, random_start=True)
+    attack = torchattacks.PGD(model, eps=0.05, alpha=0.00125, steps=10, random_start=True)
     dataloaders = {split:get_dataloader(split, batch_size=batch_size)
                    for split in ['train', 'test']}
     single_attack_image(model, attack, dataloaders['train'], batch_size, save_dir, 'train')

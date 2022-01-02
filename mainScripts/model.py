@@ -968,6 +968,7 @@ def attack_visualization(args):
                 prob_list.append(prob.numpy())
                 prob_attack_list.append(prob_attack.numpy())
 
+            print("Image attack TF2 shape = ", images_attack.shape)
             images_diff_abs = tf.abs(tf.squeeze(images_attack) - tf.squeeze(images)).numpy()
             for diff, subject_id, session_id in zip(images_diff_abs, subject_ids, session_ids):
                 makedirs(join(save_dir, split, subject_id), exist_ok=True)
