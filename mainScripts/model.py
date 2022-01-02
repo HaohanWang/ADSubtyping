@@ -947,7 +947,7 @@ def attack_visualization(args):
 
             images = tf.convert_to_tensor(images)
 
-            images_attack = projected_gradient_descent(model, images, eps=0.05, eps_iter=0.00125, nb_iter=10, norm=np.inf)
+            images_attack = projected_gradient_descent(model, images, eps=0.05, eps_iter=0.00125, nb_iter=10, norm=np.inf, rand_init=True)
 
             label_list.extend(labels)
             sub_list.extend(subject_ids)
