@@ -92,8 +92,6 @@ def single_attack_image(model, attack, dataloader, batch_size, save_dir, split):
                 prob_list.append(prob.detach().cpu().numpy())
                 prob_attack_list.append(prob_attack.detach().cpu().numpy())
 
-            print("Image attack torch shape = ", images_attack.shape)
-
             images_diff_abs = torch.abs(images_attack.squeeze(1)-images.squeeze(1)).detach().cpu().numpy()
             for j, diff in enumerate(images_diff_abs):
                 makedirs(join(save_dir, split, subs[j]), exist_ok=True)
