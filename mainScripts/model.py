@@ -27,8 +27,8 @@ if psutil.Process().username() == 'haohanwang':
     READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
     WEIGHTS_DIR = 'weights/'
 else:
-    READ_DIR = '/Volumes/Elements/Daniel/AlzheimerData/'
-    WEIGHTS_DIR = '/Volumes/Elements/Daniel/weights/'
+    READ_DIR = '/home/ec2-user/alzstudy/AlzheimerData/'
+    WEIGHTS_DIR = '/home/ec2-user/alzstudy/weights/'
 
 
 class minMaxPool(tf.keras.layers.Layer):
@@ -289,17 +289,35 @@ def train(args):
                                 idx_fold=args.idx_fold,
                                 split='test')
 
-    model = MRIImaging3DConvModel(nClass=num_classes, args=args)
-    opt = optimizers.Adam(learning_rate=5e-6)
+    if args.gpu > 1:
+        init_gpu(args.gpu)
+        # distributed training
+        strategy = tf.distribute.MirroredStrategy()
+        GLOBAL_BATCH_SIZE = args.batch_size * strategy.num_replicas_in_sync
 
-    loss_fn = losses.CategoricalCrossentropy(from_logits=True)
-    train_acc_metric = metrics.CategoricalAccuracy()
+        with strategy.scope():
+            model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+            opt = optimizers.Adam(learning_rate=5e-6)
+            loss_fn = losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
+
+            def compute_loss(labels, predictions):
+                per_example_loss = loss_fn(labels, predictions)
+                return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
+
+            train_acc_metric = metrics.CategoricalAccuracy()
+            val_acc_metric = metrics.CategoricalAccuracy()
+    else:
+        model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+        opt = optimizers.Adam(learning_rate=5e-6)
+
+        loss_fn = losses.CategoricalCrossentropy(from_logits=True)
+        train_acc_metric = metrics.CategoricalAccuracy()
+
     @tf.function
     def train_step(x, y):
         with tf.GradientTape() as tape:
             logits = model(x, training=True)
-            loss_value = loss_fn(y, logits)
-
+            loss_value = compute_loss(y, logits)
         grads = tape.gradient(loss_value, model.trainable_weights)
         opt.apply_gradients(zip(grads, model.trainable_weights))
 
@@ -337,16 +355,27 @@ def train(args):
         val_logits = model(x, training=False)
         val_acc_metric.update_state(y, val_logits)
 
+    @tf.function
+    def distributed_train_step(dataset_inputs, data_labels):
+        per_replica_losses = strategy.run(train_step, args=(dataset_inputs, data_labels))
+        return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
+                               axis=None)
+
+    @tf.function
+    def distributed_test_step(dataset_inputs, data_labels):
+        return strategy.run(test_step, args=(dataset_inputs, data_labels))
+
+
     total_step_train = math.ceil(len(trainData) / args.batch_size)
     total_step_val = math.ceil(len(validationData) / args.batch_size)
     total_step_test = math.ceil(len(testData) / args.batch_size)
 
     if args.continueEpoch != 0:
-        model.load_weights('weights/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+        model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
     elif args.dropBlock or args.worst_sample :
         # dropblock training is too hard, so let's load the previous one to continue as epoch 1
-        model.load_weights('weights/weights_regular_training/weights_aug_fold_0_seed_1_epoch_50')
+        model.load_weights(WEIGHTS_DIR + 'weights_regular_training/weights_aug_fold_0_seed_1_epoch_50')
 
     for epoch in range(1, args.epochs + 1):
 
@@ -398,10 +427,17 @@ def train(args):
                         images2 = np.clip(images2, 0, 1)  # ensure valid pixel range
 
 
-            if args.consistency == 0:
-                loss_value = train_step(images, labels)
+            if args.gpu > 1:
+                if args.consistency == 0:
+                    loss_value = distributed_train_step(images, labels)
+                else:
+                    loss_value = None
+                    # todo: what will the corresponding one on consistency loss looks like
             else:
-                loss_value = train_step_consistency(images, images2, labels)
+                if args.consistency == 0:
+                    loss_value = train_step(images, labels)
+                else:
+                    loss_value = train_step_consistency(images, images2, labels)
 
             train_acc = train_acc_metric.result()
 
@@ -418,21 +454,27 @@ def train(args):
 
         for i in range(total_step_val):
             images, labels = validationData[i]
-            test_step(images, labels)
+            if args.gpu > 1:
+                distributed_test_step(images, labels)
+            else:
+                test_step(images, labels)
         val_acc = val_acc_metric.result()
         val_acc_metric.reset_states()
         print("Validation acc: %.4f" % (float(val_acc),))
 
         for i in range(total_step_test):
             images, labels = testData[i]
-            test_step(images, labels)
+            if args.gpu > 1:
+                distributed_test_step(images, labels)
+            else:
+                test_step(images, labels)
         val_acc = val_acc_metric.result()
         val_acc_metric.reset_states()
         print("\t\tTest acc: %.4f" % (float(val_acc),))
 
         sys.stdout.flush()
 
-        model.save_weights('weights/weights' + getSaveName(args) + '_epoch_' + str(epoch))
+        model.save_weights(WEIGHTS_DIR + args.weights_folder + 'weights' + getSaveName(args) + '_epoch_' + str(epoch))
 
 
 def evaluate_crossDataSet(args):
@@ -469,7 +511,7 @@ def evaluate_crossDataSet(args):
     total_step_test_OASIS3 = math.ceil(len(OASIS3_testData) / args.batch_size)
 
     model.load_weights(
-        'weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+        WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
     print('Testing Start ...')
 
@@ -597,7 +639,7 @@ def evaluate_crossDataSet_at_individual(args):
     total_step_test_OASIS3 = math.ceil(len(OASIS3_testData) / args.batch_size)
 
     model.load_weights(
-        'weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+        WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
     print('Testing Start ...')
 
@@ -792,7 +834,7 @@ def embedding_extractor(args):
     total_step_test_OASIS3 = math.ceil(len(OASIS3_testData) / args.batch_size)
 
     model.load_weights(
-        'weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+        WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
     print('Testing Start ...')
 
@@ -901,7 +943,7 @@ def saliency_visualize(args):
     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
 
     model.load_weights(
-        'weights/' + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+        WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
     smap_generator = SaliencyMapGenerator(model)
 
@@ -974,6 +1016,17 @@ def main(args):
     train(args)
 
 
+def init_gpu(gpu_index, force=False):
+    if isinstance(gpu_index, list):
+        gpu_num = ','.join([str(i) for i in gpu_index])
+    else:
+        gpu_num = str(gpu_index)
+    if "CUDA_VISIBLE_DEVICES" in os.environ and os.environ["CUDA_VISIBLE_DEVICES"] and not force:
+        print('GPU already initiated')
+        return
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu_num
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-e', '--epochs', type=int, default=50, help='How many epochs to run in total?')
@@ -1001,7 +1054,9 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--dropBlock', type=int, default=0,
                         help='whether we drop half of the information of the images')
     parser.add_argument('-r', '--worst_sample', type=int, default=0, help='whether we use min max pooling')
-    parser.add_argument('-t', '--consistency', type=float, default=0, help='whether we use min max pooling')
+    parser.add_argument('-h', '--consistency', type=float, default=0, help='whether we use min max pooling')
+    parser.add_argument('-t', '--gpu', type=str, default=0,
+                        help='specify maximum GPU ID we want to distribute the training to')
 
     args = parser.parse_args()
 
