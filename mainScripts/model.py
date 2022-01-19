@@ -1054,7 +1054,7 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--dropBlock', type=int, default=0,
                         help='whether we drop half of the information of the images')
     parser.add_argument('-r', '--worst_sample', type=int, default=0, help='whether we use min max pooling')
-    parser.add_argument('-h', '--consistency', type=float, default=0, help='whether we use min max pooling')
+    parser.add_argument('-k', '--consistency', type=float, default=0, help='whether we use min max pooling')
     parser.add_argument('-t', '--gpu', type=str, default=0,
                         help='specify maximum GPU ID we want to distribute the training to')
 
