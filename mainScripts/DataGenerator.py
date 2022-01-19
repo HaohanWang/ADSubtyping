@@ -29,7 +29,8 @@ class MRIDataGenerator(keras.utils.Sequence):
                  MCI_included=False,
                  MCI_included_as_soft_label=False,
                  returnSubjectID=False,
-                 dropBlock = False
+                 dropBlock = False,
+                 dropBlockIterationStart = 0
                  ):
         # 'Initialization'
 
@@ -49,7 +50,7 @@ class MRIDataGenerator(keras.utils.Sequence):
         self.returnSubjectID = returnSubjectID
         self.dropBlock = dropBlock
 
-        self.dropBlock_iterationCount = 0
+        self.dropBlock_iterationCount = dropBlockIterationStart
 
         self.parse_csv_file()
         self._get_batch_split()

@@ -3,7 +3,8 @@ __author__ = 'Haohan Wang'
 import os
 import sys
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 
 import tensorflow as tf
 from tensorflow.keras import losses, optimizers, metrics, layers
@@ -19,6 +20,8 @@ import psutil
 from DataGenerator import MRIDataGenerator, MRIDataGenerator_Simple
 from SaliencyMapGenerator import SaliencyMapGenerator
 from ActivationMaximization import ActivationMaximizer
+
+# mirrored_strategy = tf.distribute.MirroredStrategy(devices=["0", "1"])
 
 if psutil.Process().username() == 'haohanwang':
     READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
@@ -162,7 +165,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = self.classifier(x)
         return x
 
-    def extract_embedding(self, inputs, intermediate_ly_idx=-1):
+    def extract_embedding(self, inputs):
         x = self.conv1(inputs)
         x = self.bn1(x)
         x = tf.nn.relu(x)
@@ -171,29 +174,21 @@ class MRIImaging3DConvModel(tf.keras.Model):
 
         x = self.bn2(x)
         x = tf.nn.relu(x)
-        if intermediate_ly_idx == 1:
-            return x
 
         x = self.pool2(x)
         x = self.conv3(x)
         x = self.bn3(x)
         x = tf.nn.relu(x)
-        if intermediate_ly_idx == 2:
-            return x
 
         x = self.pool3(x)
         x = self.conv4(x)
         x = self.bn4(x)
         x = tf.nn.relu(x)
-        if intermediate_ly_idx == 3:
-            return x
 
         x = self.pool4(x)
         x = self.conv5(x)
         x = self.bn5(x)
         x = tf.nn.relu(x)
-        if intermediate_ly_idx == 4:
-            return x
 
         x = self.pool5(x)
         x = self.gap(x)
@@ -242,6 +237,11 @@ def getSaveName(args):
         saveName = saveName + '_mm'
     if args.dropBlock:
         saveName = saveName + '_db'
+    if args.worst_sample:
+        saveName = saveName + '_ws_' + str(args.worst_sample)
+    if args.consistency:
+        saveName = saveName + '_con_' + str(args.consistency)
+
     saveName = saveName + '_fold_' + str(args.idx_fold) + '_seed_' + str(args.seed)
     return saveName
 
@@ -253,15 +253,31 @@ def train(args):
 
     ## todo: let's reorder the samples with age information
 
-    trainData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
-                                 split='train',
-                                 batchSize=args.batch_size,
-                                 MCI_included=args.mci,
-                                 MCI_included_as_soft_label=args.mci_balanced,
-                                 idx_fold=args.idx_fold,
-                                 augmented=args.augmented,
-                                 augmented_fancy=args.augmented_fancy,
-                                 dropBlock=args.dropBlock)
+    # if args.consistency != 0:
+    #     args.batch_size = args.batch_size / 2
+
+    if args.worst_sample == 0:
+        trainData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
+                                     split='train',
+                                     batchSize=args.batch_size,
+                                     MCI_included=args.mci,
+                                     MCI_included_as_soft_label=args.mci_balanced,
+                                     idx_fold=args.idx_fold,
+                                     augmented=args.augmented,
+                                     augmented_fancy=args.augmented_fancy,
+                                     dropBlock=args.dropBlock,
+                                     dropBlockIterationStart=int(args.continueEpoch*1700/args.batch_size))
+    else:
+        trainData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
+                                     split='train',
+                                     batchSize=args.batch_size * args.worst_sample,
+                                     MCI_included=args.mci,
+                                     MCI_included_as_soft_label=args.mci_balanced,
+                                     idx_fold=args.idx_fold,
+                                     augmented=args.augmented,
+                                     augmented_fancy=args.augmented_fancy,
+                                     dropBlock=args.dropBlock,
+                                     dropBlockIterationStart=int(args.continueEpoch*1700/args.batch_size))
 
     validationData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                       batchSize=args.batch_size,
@@ -274,12 +290,10 @@ def train(args):
                                 split='test')
 
     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
-
     opt = optimizers.Adam(learning_rate=5e-6)
+
     loss_fn = losses.CategoricalCrossentropy(from_logits=True)
     train_acc_metric = metrics.CategoricalAccuracy()
-    val_acc_metric = metrics.CategoricalAccuracy()
-
     @tf.function
     def train_step(x, y):
         with tf.GradientTape() as tape:
@@ -293,6 +307,31 @@ def train(args):
 
         return loss_value
 
+    def train_step_consistency(x, z, y):
+        with tf.GradientTape() as tape:
+            logits_1 = model(x, training=True)
+            logits_2 = model(z, training=True)
+            loss_value_1 = loss_fn(y, logits_1)
+            loss_value_2 = loss_fn(y, logits_2)
+            loss_value = loss_value_1 + loss_value_2 + args.consistency*tf.norm(logits_1 - logits_2, ord=2)
+
+        grads = tape.gradient(loss_value, model.trainable_weights)
+        opt.apply_gradients(zip(grads, model.trainable_weights))
+
+        train_acc_metric.update_state(y, logits_1)
+        train_acc_metric.update_state(y, logits_2)
+
+        return loss_value
+
+    def calculate_loss(x, y):
+        with tf.GradientTape() as tape:
+            logits = model(x, training=True)
+            loss_value = loss_fn(y, logits)
+
+        return loss_value
+
+    val_acc_metric = metrics.CategoricalAccuracy()
+
     @tf.function
     def test_step(x, y):
         val_logits = model(x, training=False)
@@ -305,7 +344,7 @@ def train(args):
     if args.continueEpoch != 0:
         model.load_weights('weights/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
 
-    if args.dropBlock:
+    elif args.dropBlock or args.worst_sample :
         # dropblock training is too hard, so let's load the previous one to continue as epoch 1
         model.load_weights('weights/weights_regular_training/weights_aug_fold_0_seed_1_epoch_50')
 
@@ -319,20 +358,51 @@ def train(args):
         for i in range(total_step_train):
             images, labels = trainData[i]
 
+            if args.worst_sample != 0:
+                losses_total = np.zeros(args.worst_sample*args.batch_size)
+                for k in range(args.worst_sample):
+                    xtmp = images[k*args.batch_size:(k+1)*args.batch_size]
+                    ytmp = labels[k*args.batch_size:(k+1)*args.batch_size]
+
+                    loss_batch = calculate_loss(xtmp, ytmp)
+                    losses_total[k*args.batch_size:(k+1)*args.batch_size] = loss_batch
+
+                idc1 = np.argsort(-losses_total)[:int(args.batch_size/2)]
+                idc2 = np.random.choice(range(args.batch_size*args.worst_sample), int(args.batch_size/2), replace=False)
+                idx = np.append(idc1, idc2)
+                images = images[idx]
+                labels = labels[idx]
+
             if args.pgd != 0:
                 # todo: what's the visual difference between an AD and a normal (what are the differences we need)
 
-                images += (np.random.random(size=images.shape) * 2 - 1) * args.pgd
-                for pgd_index in range(5):
-                    grad = model.calculateGradients(images, labels)
-                    images += (args.pgd / 5) * np.sign(grad)
+                if args.consistency == 0:
+                    images += (np.random.random(size=images.shape) * 2 - 1) * args.pgd
+                    for pgd_index in range(5):
+                        grad = model.calculateGradients(images, labels)
+                        images += (args.pgd / 5) * np.sign(grad)
 
-                    images = np.clip(images,
-                                     images - args.pgd,
-                                     images + args.pgd)
-                    images = np.clip(images, 0, 1)  # ensure valid pixel range
+                        images = np.clip(images,
+                                         images - args.pgd,
+                                         images + args.pgd)
+                        images = np.clip(images, 0, 1)  # ensure valid pixel range
+                else:
+                    images2 = images + (np.random.random(size=images.shape) * 2 - 1) * args.pgd
+                    for pgd_index in range(5):
+                        grad = model.calculateGradients(images2, labels)
+                        images2 += (args.pgd / 5) * np.sign(grad)
 
-            loss_value = train_step(images, labels)
+                        images2 = np.clip(images2,
+                                         images2 - args.pgd,
+                                         images2 + args.pgd)
+                        images2 = np.clip(images2, 0, 1)  # ensure valid pixel range
+
+
+            if args.consistency == 0:
+                loss_value = train_step(images, labels)
+            else:
+                loss_value = train_step_consistency(images, images2, labels)
+
             train_acc = train_acc_metric.result()
 
             print("Training loss %.4f at step %d/%d at Epoch %d with current accuracy %.4f" % (
@@ -892,7 +962,7 @@ def activation_maximization_visualize(args):
     total_step_test_OASIS3 = int(math.ceil(len(OASIS3_testData) / args.batch_size))
     print('Activation Maximization Starts ...')
 
-    activation_maximizer = ActivationMaximizer(model, args.visualize_layer_idx, args.visualize_feature_idx)
+    activation_maximizer = ActivationMaximizer(model, args.visualize_feature_idx)
 
     activation_maximizer.visualize_activation(ADNI_testData, total_step_test_ADNI)
     activation_maximizer.visualize_activation(AIBL_testData, total_step_test_AIBL)
@@ -926,12 +996,12 @@ if __name__ == "__main__":
                         help='the folder to save saliency maps')
     parser.add_argument('-w', '--activation_maximization_dir', type=str, default=READ_DIR + 'activation_maximizations',
                         help='the folder to save visualized activation maximizations')
-    parser.add_argument('-x', '--visualize_layer_idx', type=int, default=-1,
-                        help='CNN layer index for visualizing activation maximization')
     parser.add_argument('-z', '--visualize_feature_idx', type=int, default=0,
-                        help='feature visualizing activation maximization')
+                        help='feature visualizing activation maximization, only 0 or 1 for if we consider the model prediction')
     parser.add_argument('-d', '--dropBlock', type=int, default=0,
                         help='whether we drop half of the information of the images')
+    parser.add_argument('-r', '--worst_sample', type=int, default=0, help='whether we use min max pooling')
+    parser.add_argument('-t', '--consistency', type=float, default=0, help='whether we use min max pooling')
 
     args = parser.parse_args()
 

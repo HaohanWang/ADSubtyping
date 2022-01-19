@@ -29,13 +29,22 @@ def visualizeData(subj, sess, filePath):
     ipv.pylab.save(outpath)
 
 
+def visualizeResults(fileName):
+    data = np.load('../analysis/visualizations/' + fileName + '.npy')
+
+    print (np.std(data))
+    print (np.mean(data))
+    print ('-------------')
+
+    outpath = '../analysis/visualizations/' + fileName + '.html'
+
+    ipv.pylab.clear()
+    ipv.volshow(data, level=[0.2,0.2,0.2])
+    ipv.pylab.save(outpath)
+
 
 if __name__ == '__main__':
-    subj = 'sub-ADNI002S1261'
-    sess = 'ses-M00'
-    filePath = '/media/haohanwang/Elements/saliency_map/'
-    visualizeData(subj, sess, filePath)
+    fileNames = ['ses-M00', 'ses-M00_', 'ses-M06', 'ses-M06_']
 
-    filePath2 = '/media/haohanwang/Elements/saliency_map2/'
-    visualizeData(subj, sess, filePath2)
-
+    for fn in fileNames:
+        visualizeResults(fn)
