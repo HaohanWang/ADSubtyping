@@ -57,10 +57,6 @@ def saliencyDraw(ax, ex_sal, saliency_cmap, saliency_alpha):
     fig = ax.get_figure()
     fig.add_axes(ax_cb)
 
-    # smoothing over neighboring pixels
-    kernel = np.ones([5, 5]) / (5*5)
-    ndimage.convolve(ex_sal, kernel, mode='constant', cval=0.0)
-
     im = ax.imshow(ex_sal, cmap=saliency_cmap, alpha=saliency_alpha)
 
     plt.colorbar(im, cax=ax_cb)
@@ -91,6 +87,11 @@ def drawFromPath(path, label, save_dir='2d_view', order=None):
     except FileNotFoundError:
         print("Subject example not found in {}".format(path))
         return
+
+    # smoothing over neighboring pixels
+    kernel = np.ones([5, 5, 5]) / (5*5*5)
+    ndimage.convolve(ex_sal, kernel, mode='constant', cval=0.0)
+
     #     im1 = ax[0].imshow(ex_sal[sagittal_idx, :, :], cmap=saliency_cmap, alpha=saliency_alpha)
     #     im2 = ax[1].imshow(ex_sal[:, coronal_idx, :], cmap=saliency_cmap, alpha=saliency_alpha)
     #     im3 = ax[2].imshow(ex_sal[:, :, axial_idx], cmap=saliency_cmap, alpha=saliency_alpha)
