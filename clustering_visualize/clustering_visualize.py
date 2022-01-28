@@ -11,6 +11,7 @@ from tqdm import tqdm
 from glob import glob
 
 import nibabel as nib
+from scipy import ndimage
 
 import matplotlib.pyplot as plt
 import psutil
@@ -86,6 +87,11 @@ def drawFromPath(path, label, save_dir='2d_view', order=None):
     except FileNotFoundError:
         print("Subject example not found in {}".format(path))
         return
+
+    # smoothing over neighboring pixels
+    kernel = np.ones([10, 10, 10]) / (10*10*10)
+    ndimage.convolve(ex_sal, kernel, mode='constant', cval=0.0)
+
     #     im1 = ax[0].imshow(ex_sal[sagittal_idx, :, :], cmap=saliency_cmap, alpha=saliency_alpha)
     #     im2 = ax[1].imshow(ex_sal[:, coronal_idx, :], cmap=saliency_cmap, alpha=saliency_alpha)
     #     im3 = ax[2].imshow(ex_sal[:, :, axial_idx], cmap=saliency_cmap, alpha=saliency_alpha)
