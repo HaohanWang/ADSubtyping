@@ -11,6 +11,7 @@ from tqdm import tqdm
 from glob import glob
 
 import nibabel as nib
+from scipy import ndimage
 
 import matplotlib.pyplot as plt
 import psutil
@@ -55,6 +56,10 @@ def saliencyDraw(ax, ex_sal, saliency_cmap, saliency_alpha):
     ax_cb = divider.new_horizontal(size="5%", pad=0.05)
     fig = ax.get_figure()
     fig.add_axes(ax_cb)
+
+    # smoothing over neighboring pixels
+    kernel = np.ones([5, 5]) / (5*5)
+    ndimage.convolve(ex_sal, kernel, mode='constant', cval=0.0)
 
     im = ax.imshow(ex_sal, cmap=saliency_cmap, alpha=saliency_alpha)
 
