@@ -90,7 +90,7 @@ def drawFromPath(path, label, save_dir='2d_view', order=None):
 
     # smoothing over neighboring pixels
     kernel = np.ones([10, 10, 10]) / (10*10*10)
-    ndimage.convolve(ex_sal, kernel, mode='constant', cval=0.0)
+    ex_sal = ndimage.convolve(ex_sal, kernel, mode='constant', cval=0.0)
 
     #     im1 = ax[0].imshow(ex_sal[sagittal_idx, :, :], cmap=saliency_cmap, alpha=saliency_alpha)
     #     im2 = ax[1].imshow(ex_sal[:, coronal_idx, :], cmap=saliency_cmap, alpha=saliency_alpha)
