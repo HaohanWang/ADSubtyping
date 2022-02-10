@@ -296,7 +296,7 @@ def train(args):
                                 idx_fold=args.idx_fold,
                                 split='test')
 
-    if args.gpu > 1:
+    if args.gpu:
         init_gpu(args.gpu)
         # distributed training
         strategy = tf.distribute.MirroredStrategy()
@@ -434,7 +434,7 @@ def train(args):
                         images2 = np.clip(images2, 0, 1)  # ensure valid pixel range
 
 
-            if args.gpu > 1:
+            if args.gpu:
                 if args.consistency == 0:
                     loss_value = distributed_train_step(images, labels)
                 else:
@@ -461,7 +461,7 @@ def train(args):
 
         for i in range(total_step_val):
             images, labels = validationData[i]
-            if args.gpu > 1:
+            if args.gpu:
                 distributed_test_step(images, labels)
             else:
                 test_step(images, labels)
@@ -471,7 +471,7 @@ def train(args):
 
         for i in range(total_step_test):
             images, labels = testData[i]
-            if args.gpu > 1:
+            if args.gpu:
                 distributed_test_step(images, labels)
             else:
                 test_step(images, labels)
