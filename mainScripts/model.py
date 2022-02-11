@@ -370,7 +370,9 @@ def train(args):
 
     @tf.function
     def distributed_test_step(dataset_inputs, data_labels):
-        return strategy.run(test_step, args=(dataset_inputs, data_labels))
+        per_replica_losses = strategy.run(test_step, args=(dataset_inputs, data_labels))
+        return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
+                               axis=None)
 
 
     total_step_train = math.ceil(len(trainData) / args.batch_size)
