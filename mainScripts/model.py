@@ -25,7 +25,6 @@ from DataGenerator import MRIDataGenerator, MRIDataGenerator_Simple
 # from SaliencyMapGenerator import SaliencyMapGenerator
 from ActivationMaximization import ActivationMaximizer
 
-# mirrored_strategy = tf.distribute.MirroredStrategy(devices=["0", "1"])
 
 if psutil.Process().username() == 'haohanwang':
     READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
@@ -296,7 +295,7 @@ def train(args):
                                 idx_fold=args.idx_fold,
                                 split='test')
 
-    if args.gpu is not None:
+    if args.gpu:
         init_gpu(args.gpu)
         # distributed training
         strategy = tf.distribute.MirroredStrategy()
@@ -460,7 +459,13 @@ def train(args):
 
         for i in range(total_step_val):
             images, labels = validationData[i]
-            distributed_test_step(images, labels)
+
+            if args.gpu:
+                strategy = tf.distribute.MirroredStrategy()
+                with strategy.scope():
+                    distributed_test_step(images, labels)
+            else:
+                test_step(images, labels)
 
         val_acc = val_acc_metric.result()
         val_acc_metric.reset_states()
@@ -468,7 +473,12 @@ def train(args):
 
         for i in range(total_step_test):
             images, labels = testData[i]
-            distributed_test_step(images, labels)
+            if args.gpu:
+                strategy = tf.distribute.MirroredStrategy()
+                with strategy.scope():
+                    distributed_test_step(images, labels)
+            else:
+                test_step(images, labels)
 
         val_acc = val_acc_metric.result()
         val_acc_metric.reset_states()
