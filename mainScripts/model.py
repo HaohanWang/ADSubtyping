@@ -370,9 +370,7 @@ def train(args):
 
     @tf.function
     def distributed_test_step(dataset_inputs, data_labels):
-        per_replica_losses = strategy.run(test_step, args=(dataset_inputs, data_labels))
-        return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
-                               axis=None)
+        return strategy.run(test_step, args=(dataset_inputs, data_labels))
 
 
     total_step_train = math.ceil(len(trainData) / args.batch_size)
@@ -462,20 +460,16 @@ def train(args):
 
         for i in range(total_step_val):
             images, labels = validationData[i]
-            if args.gpu is not None:
-                distributed_test_step(images, labels)
-            else:
-                test_step(images, labels)
+            distributed_test_step(images, labels)
+
         val_acc = val_acc_metric.result()
         val_acc_metric.reset_states()
         print("Validation acc: %.4f" % (float(val_acc),))
 
         for i in range(total_step_test):
             images, labels = testData[i]
-            if args.gpu is not None:
-                distributed_test_step(images, labels)
-            else:
-                test_step(images, labels)
+            distributed_test_step(images, labels)
+
         val_acc = val_acc_metric.result()
         val_acc_metric.reset_states()
         print("\t\tTest acc: %.4f" % (float(val_acc),))
