@@ -461,7 +461,6 @@ def train(args):
             images, labels = validationData[i]
 
             if args.gpu:
-                strategy = tf.distribute.MirroredStrategy()
                 with strategy.scope():
                     distributed_test_step(images, labels)
             else:
@@ -474,7 +473,6 @@ def train(args):
         for i in range(total_step_test):
             images, labels = testData[i]
             if args.gpu:
-                strategy = tf.distribute.MirroredStrategy()
                 with strategy.scope():
                     distributed_test_step(images, labels)
             else:
