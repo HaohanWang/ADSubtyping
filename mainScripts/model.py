@@ -55,7 +55,6 @@ class MRIImaging3DConvModel(tf.keras.Model):
 
         if args.continueEpoch == 0 and args.dropBlock == 0:
             self.weights_folder = '../pretrainModels/best_model/fold_' + str(args.idx_fold) + '/npy_weights/'
-
             self.conv1 = layers.Conv3D(filters=8, kernel_size=3,
                                        weights=self.setConvWeights(0))
             self.bn1 = layers.BatchNormalization(weights=self.setBatchNormWeights(1))
@@ -369,7 +368,7 @@ def train(args):
 
     @tf.function
     def distributed_test_step(dataset_inputs, data_labels):
-        return strategy.run(test_step, args=(dataset_inputs, data_labels))
+        strategy.run(test_step, args=(dataset_inputs, data_labels))
 
 
     total_step_train = math.ceil(len(trainData) / args.batch_size)
@@ -377,11 +376,11 @@ def train(args):
     total_step_test = math.ceil(len(testData) / args.batch_size)
 
     if args.continueEpoch != 0:
-        model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
-
+        #model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+        model.load_weights(WEIGHTS_DIR + 'weights_regular_training_new/weights_aug_fold_0_seed_1_epoch_48')
     elif args.dropBlock or args.worst_sample :
         # dropblock training is too hard, so let's load the previous one to continue as epoch 1
-        model.load_weights(WEIGHTS_DIR + 'weights_regular_training/weights_aug_fold_0_seed_1_epoch_50')
+        model.load_weights(WEIGHTS_DIR + 'weights_regular_training/weights_aug_db_fold_0_seed_1_epoch_1')
 
     for epoch in range(1, args.epochs + 1):
 
@@ -461,8 +460,8 @@ def train(args):
             images, labels = validationData[i]
 
             if args.gpu:
-                with strategy.scope():
-                    distributed_test_step(images, labels)
+
+                distributed_test_step(images, labels)
             else:
                 test_step(images, labels)
 
@@ -473,8 +472,7 @@ def train(args):
         for i in range(total_step_test):
             images, labels = testData[i]
             if args.gpu:
-                with strategy.scope():
-                    distributed_test_step(images, labels)
+                distributed_test_step(images, labels)
             else:
                 test_step(images, labels)
 

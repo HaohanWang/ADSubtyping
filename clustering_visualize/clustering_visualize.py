@@ -30,7 +30,7 @@ def df2path(df, i):
     # return join('/media/haohanwang/Elements/saliency_map_dropblock2', df.split.iloc[i], df.participant_id.iloc[i], df.session_id.iloc[i] + '.npy')
     # return join(BASE_DIR + 'saliency_map_torch', df.split.iloc[i], df.participant_id.iloc[i],
     #             df.session_id.iloc[i] + '.npy')
-    return join(BASE_DIR + 'new_saliency_maps_ckp1', df.split.iloc[i], df.participant_id.iloc[i],
+    return join(BASE_DIR + 'saliency_regular', df.split.iloc[i], df.participant_id.iloc[i],
                 df.session_id.iloc[i] + '.npy')
 
 def path2subsess(path):
@@ -89,7 +89,7 @@ def drawFromPath(path, label, save_dir='2d_view', order=None):
         return
 
     # smoothing over neighboring pixels
-    kernel = np.ones([10, 10, 10]) / (10*10*10)
+    kernel = np.ones([4, 4, 4]) / (4*4*4)
     ex_sal = ndimage.convolve(ex_sal, kernel, mode='constant', cval=0.0)
 
     #     im1 = ax[0].imshow(ex_sal[sagittal_idx, :, :], cmap=saliency_cmap, alpha=saliency_alpha)
@@ -127,9 +127,9 @@ if __name__ == '__main__':
     tmp = tmp.drop_duplicates(subset=['participant_id'])
     df_snp = tmp.reset_index(drop=True)
 
-    train_df = pd.read_csv(BASE_DIR + 'new_saliency_maps_ckp1/train_saliency_info.csv')
+    train_df = pd.read_csv(BASE_DIR + 'saliency_regular/train_saliency_info.csv')
     # test_df = pd.read_csv(BASE_DIR + 'new_saliency_maps_ckp1/test_saliency_info.csv')
-    val_df = pd.read_csv(BASE_DIR + 'new_saliency_maps_ckp1/val_saliency_info.csv')
+    val_df = pd.read_csv(BASE_DIR + 'saliency_regular/val_saliency_info.csv')
     # df_pred = pd.concat([train_df, test_df, val_df])
     df_pred = pd.concat([train_df, val_df])
     df_pred = df_pred.reset_index(drop=True)
@@ -147,6 +147,6 @@ if __name__ == '__main__':
     for p, l in tqdm(zip(snp_correct_paths, snp_correct_labels)):
         print(p)
         print(l)
-        drawFromPath(p,l, BASE_DIR + '2d_new_saliency_ckp1')
+        drawFromPath(p,l, BASE_DIR + '2d_new_saliency_regular_smoothing')
 
 
