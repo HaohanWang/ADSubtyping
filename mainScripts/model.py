@@ -335,9 +335,11 @@ def train(args):
         with tf.GradientTape() as tape:
             logits_1 = model(x, training=True)
             logits_2 = model(z, training=True)
-            loss_value_1 = loss_fn(y, logits_1)
-            loss_value_2 = loss_fn(y, logits_2)
+            loss_value_1 = compute_loss(y, logits_1)
+            loss_value_2 = compute_loss(y, logits_2)
             loss_value = loss_value_1 + loss_value_2 + args.consistency*tf.norm(logits_1 - logits_2, ord=2)
+
+
 
         grads = tape.gradient(loss_value, model.trainable_weights)
         opt.apply_gradients(zip(grads, model.trainable_weights))
