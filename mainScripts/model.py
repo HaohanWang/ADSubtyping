@@ -330,6 +330,7 @@ def train(args):
 
         return loss_value
 
+    @tf.function
     def train_step_consistency(x, z, y):
         with tf.GradientTape() as tape:
             logits_1 = model(x, training=True)
@@ -363,6 +364,12 @@ def train(args):
     @tf.function
     def distributed_train_step(dataset_inputs, data_labels):
         per_replica_losses = strategy.run(train_step, args=(dataset_inputs, data_labels))
+        return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
+                           axis=None)
+
+    @tf.function
+    def distributed_train_step_consistency(dataset_inputs_1, ddataset_inputs_2, data_labels):
+        per_replica_losses = strategy.run(train_step_consistency, args=(dataset_inputs_1, ddataset_inputs_2, data_labels))
         return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                                axis=None)
 
@@ -435,7 +442,7 @@ def train(args):
                 if args.consistency == 0:
                     loss_value = distributed_train_step(images, labels)
                 else:
-                    loss_value = None
+                    loss_value = distributed_train_step_consistency(images, images2, labels)
                     # todo: what will the corresponding one on consistency loss looks like
             else:
                 if args.consistency == 0:
