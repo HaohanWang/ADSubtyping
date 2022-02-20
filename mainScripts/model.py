@@ -219,7 +219,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
         with tf.GradientTape() as tape:
             tape.watch(x)
             prediction = self(x, training=False)
-            loss = losses.CategoricalCrossentropy(from_logits=True)(y, prediction)
+            loss = losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)(y, prediction)
             # Get the gradients of the loss w.r.t to the input image.
         gradient = tape.gradient(loss, x)
 
