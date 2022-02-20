@@ -293,44 +293,68 @@ def train(args):
                                 batchSize=args.batch_size,
                                 idx_fold=args.idx_fold,
                                 split='test')
-
     if args.gpu:
         init_gpu(args.gpu)
-        # distributed training
-        strategy = tf.distribute.MirroredStrategy()
-        GLOBAL_BATCH_SIZE = args.batch_size * strategy.num_replicas_in_sync
+    strategy = tf.distribute.MirroredStrategy()
+    GLOBAL_BATCH_SIZE = args.batch_size * strategy.num_replicas_in_sync
 
-        with strategy.scope():
-            model = MRIImaging3DConvModel(nClass=num_classes, args=args)
-            opt = optimizers.Adam(learning_rate=5e-6)
-            loss_fn = losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
-
-            def compute_loss(labels, predictions):
-                per_example_loss = loss_fn(labels, predictions)
-                return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
-
-            def calculate_loss(x, y):
-                with tf.GradientTape() as tape:
-                    logits = model(x, training=True)
-                    per_example_loss = loss_fn(y, logits)
-                    return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
-
-            train_acc_metric = metrics.CategoricalAccuracy()
-            val_acc_metric = metrics.CategoricalAccuracy()
-    else:
+    with strategy.scope():
         model = MRIImaging3DConvModel(nClass=num_classes, args=args)
         opt = optimizers.Adam(learning_rate=5e-6)
+        loss_fn = losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
 
-        loss_fn = losses.CategoricalCrossentropy(from_logits=True)
+        def compute_loss(labels, predictions):
+            per_example_loss = loss_fn(labels, predictions)
+            return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
 
         def calculate_loss(x, y):
             with tf.GradientTape() as tape:
                 logits = model(x, training=True)
-                loss_value = loss_fn(y, logits)
-
-            return loss_value
+                per_example_loss = loss_fn(y, logits)
+                return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
 
         train_acc_metric = metrics.CategoricalAccuracy()
+        val_acc_metric = metrics.CategoricalAccuracy()
+
+
+
+    # if args.gpu:
+    #     init_gpu(args.gpu)
+    #     # distributed training
+    #     strategy = tf.distribute.MirroredStrategy()
+    #     GLOBAL_BATCH_SIZE = args.batch_size * strategy.num_replicas_in_sync
+    #
+    #     with strategy.scope():
+    #         model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+    #         opt = optimizers.Adam(learning_rate=5e-6)
+    #         loss_fn = losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
+    #
+    #         def compute_loss(labels, predictions):
+    #             per_example_loss = loss_fn(labels, predictions)
+    #             return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
+    #
+    #         def calculate_loss(x, y):
+    #             with tf.GradientTape() as tape:
+    #                 logits = model(x, training=True)
+    #                 per_example_loss = loss_fn(y, logits)
+    #                 return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
+    #
+    #         train_acc_metric = metrics.CategoricalAccuracy()
+    #         val_acc_metric = metrics.CategoricalAccuracy()
+    # else:
+    #     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+    #     opt = optimizers.Adam(learning_rate=5e-6)
+    #
+    #     loss_fn = losses.CategoricalCrossentropy(from_logits=True)
+    #
+    #     def calculate_loss(x, y):
+    #         with tf.GradientTape() as tape:
+    #             logits = model(x, training=True)
+    #             loss_value = loss_fn(y, logits)
+    #
+    #         return loss_value
+    #
+    #     train_acc_metric = metrics.CategoricalAccuracy()
 
     @tf.function
     def train_step(x, y):
@@ -403,7 +427,7 @@ def train(args):
         model.load_weights(WEIGHTS_DIR + 'weights_regular_training_new/weights_aug_fold_0_seed_1_epoch_48')
     elif args.dropBlock or args.worst_sample:
         # dropblock training is too hard, so let's load the previous one to continue as epoch 1
-        model.load_weights(WEIGHTS_DIR + 'weights_regular_training_new/weights_aug_fold_0_seed_1_epoch_50')
+        model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_2')
 
     for epoch in range(1, args.epochs + 1):
 
