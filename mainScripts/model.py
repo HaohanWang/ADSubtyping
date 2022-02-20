@@ -356,36 +356,36 @@ def train(args):
     #
     #     train_acc_metric = metrics.CategoricalAccuracy()
 
-    @tf.function
-    def train_step(x, y):
-        with tf.GradientTape() as tape:
-            logits = model(x, training=True)
-            loss_value = compute_loss(y, logits)
-        grads = tape.gradient(loss_value, model.trainable_weights)
-        opt.apply_gradients(zip(grads, model.trainable_weights))
+        @tf.function
+        def train_step(x, y):
+            with tf.GradientTape() as tape:
+                logits = model(x, training=True)
+                loss_value = compute_loss(y, logits)
+            grads = tape.gradient(loss_value, model.trainable_weights)
+            opt.apply_gradients(zip(grads, model.trainable_weights))
 
-        train_acc_metric.update_state(y, logits)
+            train_acc_metric.update_state(y, logits)
 
-        return loss_value
+            return loss_value
 
-    @tf.function
-    def train_step_consistency(x, z, y):
-        with tf.GradientTape() as tape:
-            logits_1 = model(x, training=True)
-            logits_2 = model(z, training=True)
-            loss_value_1 = compute_loss(y, logits_1)
-            loss_value_2 = compute_loss(y, logits_2)
-            loss_value = loss_value_1 + loss_value_2 + args.consistency*tf.norm(logits_1 - logits_2, ord=2)
+        @tf.function
+        def train_step_consistency(x, z, y):
+            with tf.GradientTape() as tape:
+                logits_1 = model(x, training=True)
+                logits_2 = model(z, training=True)
+                loss_value_1 = compute_loss(y, logits_1)
+                loss_value_2 = compute_loss(y, logits_2)
+                loss_value = loss_value_1 + loss_value_2 + args.consistency*tf.norm(logits_1 - logits_2, ord=2)
 
 
 
-        grads = tape.gradient(loss_value, model.trainable_weights)
-        opt.apply_gradients(zip(grads, model.trainable_weights))
+            grads = tape.gradient(loss_value, model.trainable_weights)
+            opt.apply_gradients(zip(grads, model.trainable_weights))
 
-        train_acc_metric.update_state(y, logits_1)
-        train_acc_metric.update_state(y, logits_2)
+            train_acc_metric.update_state(y, logits_1)
+            train_acc_metric.update_state(y, logits_2)
 
-        return loss_value
+            return loss_value
 
     # def calculate_loss(x, y):
     #     with tf.GradientTape() as tape:
@@ -394,28 +394,28 @@ def train(args):
     #
     #     return loss_value
 
-    val_acc_metric = metrics.CategoricalAccuracy()
+    # val_acc_metric = metrics.CategoricalAccuracy()
 
-    @tf.function
-    def test_step(x, y):
-        val_logits = model(x, training=False)
-        val_acc_metric.update_state(y, val_logits)
+        @tf.function
+        def test_step(x, y):
+            val_logits = model(x, training=False)
+            val_acc_metric.update_state(y, val_logits)
 
-    @tf.function
-    def distributed_train_step(dataset_inputs, data_labels):
-        per_replica_losses = strategy.run(train_step, args=(dataset_inputs, data_labels))
-        return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
-                           axis=None)
-
-    @tf.function
-    def distributed_train_step_consistency(dataset_inputs_1, ddataset_inputs_2, data_labels):
-        per_replica_losses = strategy.run(train_step_consistency, args=(dataset_inputs_1, ddataset_inputs_2, data_labels))
-        return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
+        @tf.function
+        def distributed_train_step(dataset_inputs, data_labels):
+            per_replica_losses = strategy.run(train_step, args=(dataset_inputs, data_labels))
+            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                                axis=None)
 
-    @tf.function
-    def distributed_test_step(dataset_inputs, data_labels):
-        strategy.run(test_step, args=(dataset_inputs, data_labels))
+        @tf.function
+        def distributed_train_step_consistency(dataset_inputs_1, ddataset_inputs_2, data_labels):
+            per_replica_losses = strategy.run(train_step_consistency, args=(dataset_inputs_1, ddataset_inputs_2, data_labels))
+            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
+                                   axis=None)
+
+        @tf.function
+        def distributed_test_step(dataset_inputs, data_labels):
+            strategy.run(test_step, args=(dataset_inputs, data_labels))
 
 
     total_step_train = math.ceil(len(trainData) / args.batch_size)
@@ -424,7 +424,7 @@ def train(args):
 
     if args.continueEpoch != 0:
         #model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
-        model.load_weights(WEIGHTS_DIR + 'weights_regular_training_new/weights_aug_fold_0_seed_1_epoch_48')
+        model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_48')
     elif args.dropBlock or args.worst_sample:
         # dropblock training is too hard, so let's load the previous one to continue as epoch 1
         model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_2')
