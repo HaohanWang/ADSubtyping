@@ -258,8 +258,8 @@ def train(args):
 
     ## todo: let's reorder the samples with age information
 
-    # if args.consistency != 0:
-    #     args.batch_size = args.batch_size / 2
+    if args.consistency != 0:
+        args.batch_size = args.batch_size // 2
 
     if args.worst_sample == 0:
         trainData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
@@ -408,8 +408,8 @@ def train(args):
                                axis=None)
 
         @tf.function
-        def distributed_train_step_consistency(dataset_inputs_1, ddataset_inputs_2, data_labels):
-            per_replica_losses = strategy.run(train_step_consistency, args=(dataset_inputs_1, ddataset_inputs_2, data_labels))
+        def distributed_train_step_consistency(dataset_inputs_1, dataset_inputs_2, data_labels):
+            per_replica_losses = strategy.run(train_step_consistency, args=(dataset_inputs_1, dataset_inputs_2, data_labels))
             return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
                                    axis=None)
 
@@ -418,118 +418,118 @@ def train(args):
             strategy.run(test_step, args=(dataset_inputs, data_labels))
 
 
-    total_step_train = math.ceil(len(trainData) / args.batch_size)
-    total_step_val = math.ceil(len(validationData) / args.batch_size)
-    total_step_test = math.ceil(len(testData) / args.batch_size)
+        total_step_train = math.ceil(len(trainData) / args.batch_size)
+        total_step_val = math.ceil(len(validationData) / args.batch_size)
+        total_step_test = math.ceil(len(testData) / args.batch_size)
 
-    if args.continueEpoch != 0:
-        #model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
-        model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_48')
-    elif args.dropBlock or args.worst_sample:
-        # dropblock training is too hard, so let's load the previous one to continue as epoch 1
-        model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_2')
+        if args.continueEpoch != 0:
+            #model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+            model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_48')
+        elif args.dropBlock or args.worst_sample:
+            # dropblock training is too hard, so let's load the previous one to continue as epoch 1
+            model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_2')
 
-    for epoch in range(1, args.epochs + 1):
+        for epoch in range(1, args.epochs + 1):
 
-        if epoch <= args.continueEpoch:
-            continue
+            if epoch <= args.continueEpoch:
+                continue
 
-        start_time = time.time()
+            start_time = time.time()
 
-        for i in range(total_step_train):
-            images, labels = trainData[i]
+            for i in range(total_step_train):
+                images, labels = trainData[i]
 
-            if args.worst_sample != 0:
-                losses_total = np.zeros(args.worst_sample*args.batch_size)
-                for k in range(args.worst_sample):
-                    xtmp = images[k*args.batch_size:(k+1)*args.batch_size]
-                    ytmp = labels[k*args.batch_size:(k+1)*args.batch_size]
+                if args.worst_sample != 0:
+                    losses_total = np.zeros(args.worst_sample*args.batch_size)
+                    for k in range(args.worst_sample):
+                        xtmp = images[k*args.batch_size:(k+1)*args.batch_size]
+                        ytmp = labels[k*args.batch_size:(k+1)*args.batch_size]
 
-                    loss_batch = calculate_loss(xtmp, ytmp)
-                    losses_total[k*args.batch_size:(k+1)*args.batch_size] = loss_batch
+                        loss_batch = calculate_loss(xtmp, ytmp)
+                        losses_total[k*args.batch_size:(k+1)*args.batch_size] = loss_batch
 
-                idc1 = np.argsort(-losses_total)[:int(args.batch_size/2)]
-                idc2 = np.random.choice(range(args.batch_size*args.worst_sample), int(args.batch_size/2), replace=False)
-                idx = np.append(idc1, idc2)
-                images = images[idx]
-                labels = labels[idx]
+                    idc1 = np.argsort(-losses_total)[:int(args.batch_size/2)]
+                    idc2 = np.random.choice(range(args.batch_size*args.worst_sample), int(args.batch_size/2), replace=False)
+                    idx = np.append(idc1, idc2)
+                    images = images[idx]
+                    labels = labels[idx]
 
-            if args.pgd != 0:
-                # todo: what's the visual difference between an AD and a normal (what are the differences we need)
+                if args.pgd != 0:
+                    # todo: what's the visual difference between an AD and a normal (what are the differences we need)
 
-                if args.consistency == 0:
-                    images += (np.random.random(size=images.shape) * 2 - 1) * args.pgd
-                    for pgd_index in range(5):
-                        grad = model.calculateGradients(images, labels)
-                        images += (args.pgd / 5) * np.sign(grad)
+                    if args.consistency == 0:
+                        images += (np.random.random(size=images.shape) * 2 - 1) * args.pgd
+                        for pgd_index in range(5):
+                            grad = model.calculateGradients(images, labels)
+                            images += (args.pgd / 5) * np.sign(grad)
 
-                        images = np.clip(images,
-                                         images - args.pgd,
-                                         images + args.pgd)
-                        images = np.clip(images, 0, 1)  # ensure valid pixel range
+                            images = np.clip(images,
+                                             images - args.pgd,
+                                             images + args.pgd)
+                            images = np.clip(images, 0, 1)  # ensure valid pixel range
+                    else:
+                        images2 = images + (np.random.random(size=images.shape) * 2 - 1) * args.pgd
+                        for pgd_index in range(5):
+                            grad = model.calculateGradients(images2, labels)
+                            images2 += (args.pgd / 5) * np.sign(grad)
+
+                            images2 = np.clip(images2,
+                                             images2 - args.pgd,
+                                             images2 + args.pgd)
+                            images2 = np.clip(images2, 0, 1)  # ensure valid pixel range
+
+                if args.gpu is not None:
+                    if args.consistency == 0:
+                        loss_value = distributed_train_step(images, labels)
+                    else:
+                        loss_value = distributed_train_step_consistency(images, images2, labels)
+                        # todo: what will the corresponding one on consistency loss looks like
                 else:
-                    images2 = images + (np.random.random(size=images.shape) * 2 - 1) * args.pgd
-                    for pgd_index in range(5):
-                        grad = model.calculateGradients(images2, labels)
-                        images2 += (args.pgd / 5) * np.sign(grad)
+                    if args.consistency == 0:
+                        loss_value = train_step(images, labels)
+                    else:
+                        loss_value = train_step_consistency(images, images2, labels)
 
-                        images2 = np.clip(images2,
-                                         images2 - args.pgd,
-                                         images2 + args.pgd)
-                        images2 = np.clip(images2, 0, 1)  # ensure valid pixel range
+                train_acc = train_acc_metric.result()
 
-            if args.gpu is not None:
-                if args.consistency == 0:
-                    loss_value = distributed_train_step(images, labels)
-                else:
-                    loss_value = distributed_train_step_consistency(images, images2, labels)
-                    # todo: what will the corresponding one on consistency loss looks like
-            else:
-                if args.consistency == 0:
-                    loss_value = train_step(images, labels)
-                else:
-                    loss_value = train_step_consistency(images, images2, labels)
+                print("Training loss %.4f at step %d/%d at Epoch %d with current accuracy %.4f" % (
+                    float(loss_value), int(i + 1), total_step_train, epoch, train_acc), end='\r')
 
             train_acc = train_acc_metric.result()
+            print(
+                "\n\tEpoch %d, Training loss %.4f and acc over epoch: %.4f" % (epoch, float(loss_value), float(train_acc)),
+                end='\t')
 
-            print("Training loss %.4f at step %d/%d at Epoch %d with current accuracy %.4f" % (
-                float(loss_value), int(i + 1), total_step_train, epoch, train_acc), end='\r')
+            train_acc_metric.reset_states()
+            print("with: %.2f seconds" % (time.time() - start_time), end='\t')
 
-        train_acc = train_acc_metric.result()
-        print(
-            "\n\tEpoch %d, Training loss %.4f and acc over epoch: %.4f" % (epoch, float(loss_value), float(train_acc)),
-            end='\t')
+            for i in range(total_step_val):
+                images, labels = validationData[i]
 
-        train_acc_metric.reset_states()
-        print("with: %.2f seconds" % (time.time() - start_time), end='\t')
+                if args.gpu:
 
-        for i in range(total_step_val):
-            images, labels = validationData[i]
+                    distributed_test_step(images, labels)
+                else:
+                    test_step(images, labels)
 
-            if args.gpu:
+            val_acc = val_acc_metric.result()
+            val_acc_metric.reset_states()
+            print("Validation acc: %.4f" % (float(val_acc),))
 
-                distributed_test_step(images, labels)
-            else:
-                test_step(images, labels)
+            for i in range(total_step_test):
+                images, labels = testData[i]
+                if args.gpu:
+                    distributed_test_step(images, labels)
+                else:
+                    test_step(images, labels)
 
-        val_acc = val_acc_metric.result()
-        val_acc_metric.reset_states()
-        print("Validation acc: %.4f" % (float(val_acc),))
+            val_acc = val_acc_metric.result()
+            val_acc_metric.reset_states()
+            print("\t\tTest acc: %.4f" % (float(val_acc),))
 
-        for i in range(total_step_test):
-            images, labels = testData[i]
-            if args.gpu:
-                distributed_test_step(images, labels)
-            else:
-                test_step(images, labels)
+            sys.stdout.flush()
 
-        val_acc = val_acc_metric.result()
-        val_acc_metric.reset_states()
-        print("\t\tTest acc: %.4f" % (float(val_acc),))
-
-        sys.stdout.flush()
-
-        model.save_weights(WEIGHTS_DIR + args.weights_folder + 'weights' + getSaveName(args) + '_epoch_' + str(epoch))
+            model.save_weights(WEIGHTS_DIR + args.weights_folder + 'weights' + getSaveName(args) + '_epoch_' + str(epoch))
 
 
 def evaluate_crossDataSet(args):
