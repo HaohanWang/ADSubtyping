@@ -309,6 +309,12 @@ def train(args):
                 per_example_loss = loss_fn(labels, predictions)
                 return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
 
+            def calculate_loss(x, y):
+                with tf.GradientTape() as tape:
+                    logits = model(x, training=True)
+                    per_example_loss = loss_fn(y, logits)
+                    return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
+
             train_acc_metric = metrics.CategoricalAccuracy()
             val_acc_metric = metrics.CategoricalAccuracy()
     else:
@@ -316,6 +322,14 @@ def train(args):
         opt = optimizers.Adam(learning_rate=5e-6)
 
         loss_fn = losses.CategoricalCrossentropy(from_logits=True)
+
+        def calculate_loss(x, y):
+            with tf.GradientTape() as tape:
+                logits = model(x, training=True)
+                loss_value = loss_fn(y, logits)
+
+            return loss_value
+
         train_acc_metric = metrics.CategoricalAccuracy()
 
     @tf.function
@@ -349,12 +363,12 @@ def train(args):
 
         return loss_value
 
-    def calculate_loss(x, y):
-        with tf.GradientTape() as tape:
-            logits = model(x, training=True)
-            loss_value = loss_fn(y, logits)
-
-        return loss_value
+    # def calculate_loss(x, y):
+    #     with tf.GradientTape() as tape:
+    #         logits = model(x, training=True)
+    #         loss_value = loss_fn(y, logits)
+    #
+    #     return loss_value
 
     val_acc_metric = metrics.CategoricalAccuracy()
 
@@ -387,9 +401,9 @@ def train(args):
     if args.continueEpoch != 0:
         #model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
         model.load_weights(WEIGHTS_DIR + 'weights_regular_training_new/weights_aug_fold_0_seed_1_epoch_48')
-    elif args.dropBlock or args.worst_sample :
+    elif args.dropBlock or args.worst_sample:
         # dropblock training is too hard, so let's load the previous one to continue as epoch 1
-        model.load_weights(WEIGHTS_DIR + 'weights_regular_training/weights_aug_db_fold_0_seed_1_epoch_1')
+        model.load_weights(WEIGHTS_DIR + 'weights_regular_training_new/weights_aug_fold_0_seed_1_epoch_50')
 
     for epoch in range(1, args.epochs + 1):
 
