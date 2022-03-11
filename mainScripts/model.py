@@ -22,6 +22,8 @@ from os.path import join
 from cleverhans.tf2.attacks.projected_gradient_descent import projected_gradient_descent
 
 from DataGenerator import MRIDataGenerator, MRIDataGenerator_Simple
+from dataAugmentation import MRIDataAugmentation
+
 # from SaliencyMapGenerator import SaliencyMapGenerator
 from ActivationMaximization import ActivationMaximizer
 
@@ -53,7 +55,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
     def __init__(self, nClass, args):
         super(MRIImaging3DConvModel, self).__init__()
 
-        if args.continueEpoch == 0 and args.dropBlock == 0:
+        if args.continueEpoch == 0 and args.dropBlock == 0 and args.gradientGuidedDropBlock == 0:
             self.weights_folder = '../pretrainModels/best_model/fold_' + str(args.idx_fold) + '/npy_weights/'
             self.conv1 = layers.Conv3D(filters=8, kernel_size=3,
                                        weights=self.setConvWeights(0))
@@ -141,6 +143,8 @@ class MRIImaging3DConvModel(tf.keras.Model):
             self.dense1 = layers.Dense(units=1024, activation="relu")
             self.dense2 = layers.Dense(units=128, activation="relu")
             self.classifier = layers.Dense(units=nClass, activation="relu")
+
+        self.gradients_inputs = np.zeros((169, 208, 179))
 
     def call(self, inputs, training=None, mask=None):
         x = self.conv1(inputs)
@@ -253,7 +257,6 @@ def getSaveName(args):
 
 def train(args):
     num_classes = 2
-
     ## todo: augment some data that are simple to classify at the beginning
 
     ## todo: let's reorder the samples with age information
@@ -271,7 +274,8 @@ def train(args):
                                      augmented=args.augmented,
                                      augmented_fancy=args.augmented_fancy,
                                      dropBlock=args.dropBlock,
-                                     dropBlockIterationStart=int(args.continueEpoch*1700/args.batch_size))
+                                     dropBlockIterationStart=int(args.continueEpoch*1700/args.batch_size),
+                                     gradientGuidedDropBlock=args.gradientGuidedDropBlock)
     else:
         trainData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                      split='train',
@@ -282,7 +286,9 @@ def train(args):
                                      augmented=args.augmented,
                                      augmented_fancy=args.augmented_fancy,
                                      dropBlock=args.dropBlock,
-                                     dropBlockIterationStart=int(args.continueEpoch*1700/args.batch_size))
+                                     dropBlockIterationStart=int(args.continueEpoch*1700/args.batch_size),
+                                     gradientGuidedDropBlock=args.gradientGuidedDropBlock)
+
 
     validationData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                       batchSize=args.batch_size,
@@ -300,6 +306,8 @@ def train(args):
 
     with strategy.scope():
         model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+        if args.gradientGuidedDropBlock:
+            model.gradients_inputs = np.zeros((169, 208, 179))
         opt = optimizers.Adam(learning_rate=5e-6)
         loss_fn = losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
 
@@ -316,68 +324,32 @@ def train(args):
         train_acc_metric = metrics.CategoricalAccuracy()
         val_acc_metric = metrics.CategoricalAccuracy()
 
-
-
-    # if args.gpu:
-    #     init_gpu(args.gpu)
-    #     # distributed training
-    #     strategy = tf.distribute.MirroredStrategy()
-    #     GLOBAL_BATCH_SIZE = args.batch_size * strategy.num_replicas_in_sync
-    #
-    #     with strategy.scope():
-    #         model = MRIImaging3DConvModel(nClass=num_classes, args=args)
-    #         opt = optimizers.Adam(learning_rate=5e-6)
-    #         loss_fn = losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
-    #
-    #         def compute_loss(labels, predictions):
-    #             per_example_loss = loss_fn(labels, predictions)
-    #             return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
-    #
-    #         def calculate_loss(x, y):
-    #             with tf.GradientTape() as tape:
-    #                 logits = model(x, training=True)
-    #                 per_example_loss = loss_fn(y, logits)
-    #                 return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE)
-    #
-    #         train_acc_metric = metrics.CategoricalAccuracy()
-    #         val_acc_metric = metrics.CategoricalAccuracy()
-    # else:
-    #     model = MRIImaging3DConvModel(nClass=num_classes, args=args)
-    #     opt = optimizers.Adam(learning_rate=5e-6)
-    #
-    #     loss_fn = losses.CategoricalCrossentropy(from_logits=True)
-    #
-    #     def calculate_loss(x, y):
-    #         with tf.GradientTape() as tape:
-    #             logits = model(x, training=True)
-    #             loss_value = loss_fn(y, logits)
-    #
-    #         return loss_value
-    #
-    #     train_acc_metric = metrics.CategoricalAccuracy()
-
         @tf.function
         def train_step(x, y):
-            with tf.GradientTape() as tape:
+            grads_per_step = None
+            with tf.GradientTape() as tape, tf.GradientTape() as dropblock_tape:
+                dropblock_tape.watch(x)
                 logits = model(x, training=True)
                 loss_value = compute_loss(y, logits)
             grads = tape.gradient(loss_value, model.trainable_weights)
             opt.apply_gradients(zip(grads, model.trainable_weights))
 
             train_acc_metric.update_state(y, logits)
-
-            return loss_value
+            if args.gradientGuidedDropBlock:
+                grads = tf.squeeze(dropblock_tape.gradient(loss_value, x, unconnected_gradients="zero"))
+                grads_per_step = tf.reduce_sum(grads, axis=0)
+            return loss_value, grads_per_step
 
         @tf.function
         def train_step_consistency(x, z, y):
-            with tf.GradientTape() as tape:
+            grads_per_step = None
+            with tf.GradientTape() as tape, tf.GradientTape() as dropblock_tape:
+                dropblock_tape.watch(x)
                 logits_1 = model(x, training=True)
                 logits_2 = model(z, training=True)
                 loss_value_1 = compute_loss(y, logits_1)
                 loss_value_2 = compute_loss(y, logits_2)
                 loss_value = loss_value_1 + loss_value_2 + args.consistency*tf.norm(logits_1 - logits_2, ord=2)
-
-
 
             grads = tape.gradient(loss_value, model.trainable_weights)
             opt.apply_gradients(zip(grads, model.trainable_weights))
@@ -385,16 +357,10 @@ def train(args):
             train_acc_metric.update_state(y, logits_1)
             train_acc_metric.update_state(y, logits_2)
 
-            return loss_value
-
-    # def calculate_loss(x, y):
-    #     with tf.GradientTape() as tape:
-    #         logits = model(x, training=True)
-    #         loss_value = loss_fn(y, logits)
-    #
-    #     return loss_value
-
-    # val_acc_metric = metrics.CategoricalAccuracy()
+            if args.gradientGuidedDropBlock:
+                grads = tf.squeeze(dropblock_tape.gradient(loss_value, x, unconnected_gradients="zero"))
+                grads_per_step = tf.reduce_sum(grads, axis=0)
+            return loss_value, grads_per_step
 
         @tf.function
         def test_step(x, y):
@@ -403,15 +369,13 @@ def train(args):
 
         @tf.function
         def distributed_train_step(dataset_inputs, data_labels):
-            per_replica_losses = strategy.run(train_step, args=(dataset_inputs, data_labels))
-            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
-                               axis=None)
+            per_replica_losses, grads_per_step = strategy.run(train_step, args=(dataset_inputs, data_labels))
+            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None), strategy.reduce(tf.distribute.ReduceOp.SUM, grads_per_step, axis=None)
 
         @tf.function
         def distributed_train_step_consistency(dataset_inputs_1, dataset_inputs_2, data_labels):
-            per_replica_losses = strategy.run(train_step_consistency, args=(dataset_inputs_1, dataset_inputs_2, data_labels))
-            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
-                                   axis=None)
+            per_replica_losses, grads_per_step = strategy.run(train_step_consistency, args=(dataset_inputs_1, dataset_inputs_2, data_labels))
+            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None), strategy.reduce(tf.distribute.ReduceOp.SUM, grads_per_step, axis=None)
 
         @tf.function
         def distributed_test_step(dataset_inputs, data_labels):
@@ -425,17 +389,18 @@ def train(args):
         if args.continueEpoch != 0:
             #model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
             model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_48')
-        elif args.dropBlock or args.worst_sample:
+        elif args.dropBlock or args.worst_sample or args.gradientGuidedDropBlock:
             # dropblock training is too hard, so let's load the previous one to continue as epoch 1
             model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_2')
 
         for epoch in range(1, args.epochs + 1):
+            # reset the total accumulated gradients wrt all images in training set for gradient-guided dropblock
+            model.gradients_inputs = np.zeros((169, 208, 179))
 
             if epoch <= args.continueEpoch:
                 continue
 
             start_time = time.time()
-
             for i in range(total_step_train):
                 images, labels = trainData[i]
 
@@ -480,18 +445,20 @@ def train(args):
 
                 if args.gpu is not None:
                     if args.consistency == 0:
-                        loss_value = distributed_train_step(images, labels)
+                        loss_value, grads_per_step = distributed_train_step(images, labels)
                     else:
-                        loss_value = distributed_train_step_consistency(images, images2, labels)
+                        loss_value, grads_per_step = distributed_train_step_consistency(images, images2, labels)
                         # todo: what will the corresponding one on consistency loss looks like
                 else:
                     if args.consistency == 0:
-                        loss_value = train_step(images, labels)
+                        loss_value, grads_per_step = train_step(images, labels)
                     else:
-                        loss_value = train_step_consistency(images, images2, labels)
+                        loss_value, grads_per_step = train_step_consistency(images, images2, labels)
+
+                if args.gradientGuidedDropBlock:
+                    model.gradients_inputs += grads_per_step.numpy()
 
                 train_acc = train_acc_metric.result()
-
                 print("Training loss %.4f at step %d/%d at Epoch %d with current accuracy %.4f" % (
                     float(loss_value), int(i + 1), total_step_train, epoch, train_acc), end='\r')
 
@@ -502,6 +469,11 @@ def train(args):
 
             train_acc_metric.reset_states()
             print("with: %.2f seconds" % (time.time() - start_time), end='\t')
+
+            # perform gradient-guided drop block instead of random dropblock
+            if args.gradientGuidedDropBlock:
+                # update the accumulated gradients w.r.t all training images at the end of each epoch
+                trainData.drop_block_gradients = model.gradients_inputs
 
             for i in range(total_step_val):
                 images, labels = validationData[i]
@@ -1018,10 +990,7 @@ def saliency(args):
                     outputs = model(images, training=False)
                 prob = tf.keras.activations.softmax(outputs)
                 prob_list.append(prob.numpy())
-
                 loss = losses.CategoricalCrossentropy(from_logits=True)(labels, outputs)
-                # max_idx = tf.argmax(outputs, axis=1)
-                # max_score = outputs[0, max_idx[0]]
 
             gradients = tape.gradient(loss, images)
             gradients = gradients.numpy()
@@ -1248,6 +1217,8 @@ if __name__ == "__main__":
                         help='feature visualizing activation maximization, only 0 or 1 for if we consider the model prediction')
     parser.add_argument('-d', '--dropBlock', type=int, default=0,
                         help='whether we drop half of the information of the images')
+    parser.add_argument('-o', '--gradientGuidedDropBlock', type=int, default=0,
+                        help='whether we perform gradient guided dropBlock')
     parser.add_argument('-r', '--worst_sample', type=int, default=0, help='whether we use min max pooling')
     parser.add_argument('-y', '--consistency', type=float, default=0, help='whether we use min max pooling')
     parser.add_argument('-t', '--gpu', type=str, default=0,

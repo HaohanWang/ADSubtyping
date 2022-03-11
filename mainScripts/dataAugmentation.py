@@ -2,6 +2,7 @@ __author__ = 'Haohan Wang'
 
 from scipy.ndimage import rotate, interpolation
 import numpy as np
+import heapq
 
 from scipy.ndimage.morphology import grey_erosion, grey_dilation
 
@@ -48,6 +49,24 @@ class MRIDataAugmentation():
             indice_set[2][0]:indice_set[2][1]] = \
                 np.random.random(size=(indice_set[0][1] - indice_set[0][0], indice_set[1][1] - indice_set[1][0],
                                        indice_set[2][1] - indice_set[2][0]))
+
+        return img
+
+    def augmentData_batch_erasing_grad_guided(self, imgs, iterCount, grads):
+        for i in range(imgs.shape[0]):
+            imgs[i, :, :, :, 0] = self.augmentData_single_erasing_grad_guided(imgs[i, :, :, :, 0], iterCount, grads)
+        return imgs
+
+    def augmentData_single_erasing_grad_guided(self, img, iterCount, grads):
+        num_drop_blocks = iterCount // 8000 + 1
+        block_means = np.array(np.mean(np.abs(grads[indices_set[0][0]:indices_set[0][1], indices_set[1][0]:indices_set[1][1], indices_set[2][0]:indices_set[2][1]])) for indices_set in self.indices_block)
+        # drop the blocks with the largest avg gradients
+        block_indices = heapq.nlargest(num_drop_blocks, range(8), block_means.take)
+
+        for block_idx in block_indices:
+            img[block_idx[0][0]:block_idx[0][1], block_idx[1][0]:block_idx[1][1],
+            block_idx[2][0]:block_idx[2][1]] = \
+                np.random.random(size=(block_idx[0][1] - block_idx[0][0], block_idx[1][1] - block_idx[1][0], block_idx[2][1] - block_idx[2][0]))
 
         return img
 
