@@ -129,7 +129,7 @@ class Conv5_FC3(nn.Module):
         self.flattened_shape = [-1, 128, 6, 7, 6]
 
     def forward_ori(self, x):
-        
+
         x = self.features(x)
         x = self.classifier_ori(x)
 
