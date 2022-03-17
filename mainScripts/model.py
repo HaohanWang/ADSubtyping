@@ -324,7 +324,6 @@ def train(args):
         train_acc_metric = metrics.CategoricalAccuracy()
         val_acc_metric = metrics.CategoricalAccuracy()
 
-        @tf.function
         def train_step(x, y):
             grads_per_step = None
             with tf.GradientTape() as tape, tf.GradientTape() as dropblock_tape:
@@ -340,7 +339,6 @@ def train(args):
                 grads_per_step = tf.reduce_sum(grads, axis=0)
             return loss_value, grads_per_step
 
-        @tf.function
         def train_step_consistency(x, z, y):
             grads_per_step = None
             with tf.GradientTape() as tape, tf.GradientTape() as dropblock_tape:
@@ -362,7 +360,6 @@ def train(args):
                 grads_per_step = tf.reduce_sum(grads, axis=0)
             return loss_value, grads_per_step
 
-        @tf.function
         def test_step(x, y):
             val_logits = model(x, training=False)
             val_acc_metric.update_state(y, val_logits)
@@ -379,7 +376,7 @@ def train(args):
 
         @tf.function
         def distributed_test_step(dataset_inputs, data_labels):
-            strategy.run(test_step, args=(dataset_inputs, data_labels))
+            return strategy.run(test_step, args=(dataset_inputs, data_labels))
 
 
         total_step_train = math.ceil(len(trainData) / args.batch_size)
@@ -443,17 +440,11 @@ def train(args):
                                              images2 + args.pgd)
                             images2 = np.clip(images2, 0, 1)  # ensure valid pixel range
 
-                if args.gpu is not None:
-                    if args.consistency == 0:
-                        loss_value, grads_per_step = distributed_train_step(images, labels)
-                    else:
-                        loss_value, grads_per_step = distributed_train_step_consistency(images, images2, labels)
-                        # todo: what will the corresponding one on consistency loss looks like
+                if args.consistency == 0:
+                    loss_value, grads_per_step = distributed_train_step(images, labels)
                 else:
-                    if args.consistency == 0:
-                        loss_value, grads_per_step = train_step(images, labels)
-                    else:
-                        loss_value, grads_per_step = train_step_consistency(images, images2, labels)
+                    loss_value, grads_per_step = distributed_train_step_consistency(images, images2, labels)
+                    # todo: what will the corresponding one on consistency loss looks like
 
                 if args.gradientGuidedDropBlock:
                     model.gradients_inputs += grads_per_step.numpy()
@@ -478,11 +469,8 @@ def train(args):
             for i in range(total_step_val):
                 images, labels = validationData[i]
 
-                if args.gpu:
+                distributed_test_step(images, labels)
 
-                    distributed_test_step(images, labels)
-                else:
-                    test_step(images, labels)
 
             val_acc = val_acc_metric.result()
             val_acc_metric.reset_states()
