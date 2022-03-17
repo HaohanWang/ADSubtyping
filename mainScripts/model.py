@@ -468,9 +468,7 @@ def train(args):
 
             for i in range(total_step_val):
                 images, labels = validationData[i]
-
                 distributed_test_step(images, labels)
-
 
             val_acc = val_acc_metric.result()
             val_acc_metric.reset_states()
@@ -478,10 +476,7 @@ def train(args):
 
             for i in range(total_step_test):
                 images, labels = testData[i]
-                if args.gpu:
-                    distributed_test_step(images, labels)
-                else:
-                    test_step(images, labels)
+                distributed_test_step(images, labels)
 
             val_acc = val_acc_metric.result()
             val_acc_metric.reset_states()
