@@ -59,10 +59,11 @@ class MRIDataAugmentation():
 
     def augmentData_single_erasing_grad_guided(self, img, iterCount, grads):
         num_drop_blocks = iterCount // 8000 + 1
-        block_means = np.array(np.mean(np.abs(grads[indices_set[0][0]:indices_set[0][1], indices_set[1][0]:indices_set[1][1], indices_set[2][0]:indices_set[2][1]])) for indices_set in self.indices_block)
+        block_means = list(np.mean(np.abs(grads[indices_set[0][0]:indices_set[0][1], indices_set[1][0]:indices_set[1][1], indices_set[2][0]:indices_set[2][1]])) for indices_set in self.indices_block)
         # drop the blocks with the largest avg gradients
-        block_indices = heapq.nlargest(num_drop_blocks, range(8), block_means.take)
+        indices_idx = heapq.nlargest(num_drop_blocks, range(8), block_means.__getitem__)
 
+        block_indices = [self.indices_block[k] for k in indices_idx]
         for block_idx in block_indices:
             img[block_idx[0][0]:block_idx[0][1], block_idx[1][0]:block_idx[1][1],
             block_idx[2][0]:block_idx[2][1]] = \
