@@ -29,7 +29,7 @@ class MRIDataAugmentation():
         self.indices_block_small = [((small_block_height*i, small_block_height*(i+1)),
                                      (small_block_width*j, small_block_width*(j+1)),
                                      (small_block_depth*k, small_block_depth*(k+1)))
-                                       for i, j, k in itertools.product(range(smallBlockFactor), range(smallBlockFactor), range(smallBlockFactor))]
+                                    for i, j, k in itertools.product(range(smallBlockFactor), range(smallBlockFactor), range(smallBlockFactor))]
 
     def augmentData_batch_withLabel(self, imgs, labels):
         for i in range(imgs.shape[0]):
@@ -66,13 +66,14 @@ class MRIDataAugmentation():
         for i in range(imgs.shape[0]):
             # dropping only smaller blocks with highest avg gradients
             imgs[i, :, :, :, 0] = self.augmentData_single_erasing_grad_guided(imgs[i, :, :, :, 0], iterCount, grads)
-            # then we perform random dropping for the regular (8) large blocks
+            # then we drop randomly one / some of the large blocks
             imgs[i, :, :, :, 0] = self.augmentData_single_erasing(imgs[i, :, :, :, 0], iterCount)
         return imgs
 
     def augmentData_single_erasing_grad_guided(self, img, iterCount, grads):
         num_drop_blocks = iterCount // 8000 + 1
-        block_means = list(np.mean(np.abs(grads[indices_set[0][0]:indices_set[0][1], indices_set[1][0]:indices_set[1][1], indices_set[2][0]:indices_set[2][1]])) for indices_set in self.indices_block_small)
+        block_means = list(np.mean(np.abs(grads[indices_set[0][0]:indices_set[0][1], indices_set[1][0]:indices_set[1][1],
+                                          indices_set[2][0]:indices_set[2][1]])) for indices_set in self.indices_block_small)
         # drop the blocks with the largest avg gradients
         indices_idx = heapq.nlargest(num_drop_blocks, range(len(self.indices_block_small)), block_means.__getitem__)
 
