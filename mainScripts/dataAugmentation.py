@@ -3,12 +3,13 @@ __author__ = 'Haohan Wang'
 from scipy.ndimage import rotate, interpolation
 import numpy as np
 import heapq
+import itertools
 
 from scipy.ndimage.morphology import grey_erosion, grey_dilation
 
 
 class MRIDataAugmentation():
-    def __init__(self, imgShape, augProb):
+    def __init__(self, imgShape, augProb, smallBlockFactor=4):
         self.height = imgShape[0]
         self.width = imgShape[1]
         self.depth = imgShape[2]
@@ -20,6 +21,15 @@ class MRIDataAugmentation():
                               ((0, 84), (104, 208), (0, 89)), ((84, 169), (104, 208), (0, 89)),
                               ((0, 84), (0, 104), (89, 179)), ((84, 169), (0, 104), (89, 179)),
                               ((0, 84), (104, 208), (89, 179)), ((84, 169), (104, 208), (89, 179))]
+
+        small_block_height = self.height // smallBlockFactor
+        small_block_width = self.width // smallBlockFactor
+        small_block_depth = self.depth // smallBlockFactor
+
+        self.indices_block_small = [((small_block_height*i, small_block_height*(i+1)),
+                                     (small_block_width*j, small_block_width*(j+1)),
+                                     (small_block_depth*k, small_block_depth*(k+1)))
+                                       for i, j, k in itertools.product(range(smallBlockFactor), range(smallBlockFactor), range(smallBlockFactor))]
 
     def augmentData_batch_withLabel(self, imgs, labels):
         for i in range(imgs.shape[0]):
@@ -54,16 +64,19 @@ class MRIDataAugmentation():
 
     def augmentData_batch_erasing_grad_guided(self, imgs, iterCount, grads):
         for i in range(imgs.shape[0]):
+            # dropping only smaller blocks with highest avg gradients
             imgs[i, :, :, :, 0] = self.augmentData_single_erasing_grad_guided(imgs[i, :, :, :, 0], iterCount, grads)
+            # then we perform random dropping for the regular (8) large blocks
+            imgs[i, :, :, :, 0] = self.augmentData_single_erasing(imgs[i, :, :, :, 0], iterCount)
         return imgs
 
     def augmentData_single_erasing_grad_guided(self, img, iterCount, grads):
         num_drop_blocks = iterCount // 8000 + 1
-        block_means = list(np.mean(np.abs(grads[indices_set[0][0]:indices_set[0][1], indices_set[1][0]:indices_set[1][1], indices_set[2][0]:indices_set[2][1]])) for indices_set in self.indices_block)
+        block_means = list(np.mean(np.abs(grads[indices_set[0][0]:indices_set[0][1], indices_set[1][0]:indices_set[1][1], indices_set[2][0]:indices_set[2][1]])) for indices_set in self.indices_block_small)
         # drop the blocks with the largest avg gradients
-        indices_idx = heapq.nlargest(num_drop_blocks, range(8), block_means.__getitem__)
+        indices_idx = heapq.nlargest(num_drop_blocks, range(len(self.indices_block_small)), block_means.__getitem__)
 
-        block_indices = [self.indices_block[k] for k in indices_idx]
+        block_indices = [self.indices_block_small[k] for k in indices_idx]
         for block_idx in block_indices:
             img[block_idx[0][0]:block_idx[0][1], block_idx[1][0]:block_idx[1][1],
             block_idx[2][0]:block_idx[2][1]] = \
