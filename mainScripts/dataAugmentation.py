@@ -75,10 +75,15 @@ class MRIDataAugmentation():
         # drop the blocks with the largest avg gradients
         largest_grad_indx = np.argmax(block_means)
 
+        print("largest grad idx: ", largest_grad_indx)
         rand_candidates = list(range(len(self.indices_block_small)))
         rand_candidates.remove(largest_grad_indx)
+
+        print("remaining candidate indices: ", rand_candidates)
         # drop the rest of blocks randomly
         indices_idx = np.random.choice(rand_candidates, num_drop_blocks - 1, replace=False)
+
+        print("final candidates: ", indices_idx + [largest_grad_indx])
         block_indices = [self.indices_block_small[k] for k in indices_idx + [largest_grad_indx]]
         for block_idx in block_indices:
             img[block_idx[0][0]:block_idx[0][1], block_idx[1][0]:block_idx[1][1],
