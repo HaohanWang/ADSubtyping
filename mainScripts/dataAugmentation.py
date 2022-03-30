@@ -79,7 +79,7 @@ class MRIDataAugmentation():
         rand_candidates.remove(largest_grad_indx)
 
         # drop the rest of blocks randomly
-        indices_idx = np.random.choice((rand_candidates), num_drop_blocks - 1, replace=False)
+        indices_idx = np.random.choice(rand_candidates, num_drop_blocks - 1, replace=False)
         indices_idx = np.append(indices_idx, largest_grad_indx)
 
         block_indices = [self.indices_block_small[k] for k in indices_idx]
