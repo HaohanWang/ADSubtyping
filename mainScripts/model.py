@@ -323,23 +323,17 @@ def train(args):
         val_acc_metric = metrics.CategoricalAccuracy()
 
         def train_step(x, y):
-            grads_per_step = None
-            with tf.GradientTape() as tape, tf.GradientTape() as dropblock_tape:
-                dropblock_tape.watch(x)
+            with tf.GradientTape() as tape:
                 logits = model(x, training=True)
                 loss_value = compute_loss(y, logits)
             grads = tape.gradient(loss_value, model.trainable_weights)
             opt.apply_gradients(zip(grads, model.trainable_weights))
 
             train_acc_metric.update_state(y, logits)
-            if args.gradientGuidedDropBlock:
-                grads_per_step = dropblock_tape.gradient(loss_value, x, unconnected_gradients="zero")
-            return loss_value, grads_per_step
+            return loss_value
 
         def train_step_consistency(x, z, y):
-            grads_per_step = None
-            with tf.GradientTape() as tape, tf.GradientTape() as dropblock_tape:
-                dropblock_tape.watch(x)
+            with tf.GradientTape() as tape:
                 logits_1 = model(x, training=True)
                 logits_2 = model(z, training=True)
                 loss_value_1 = compute_loss(y, logits_1)
@@ -352,9 +346,7 @@ def train(args):
             train_acc_metric.update_state(y, logits_1)
             train_acc_metric.update_state(y, logits_2)
 
-            if args.gradientGuidedDropBlock:
-                grads_per_step = dropblock_tape.gradient(loss_value, x, unconnected_gradients="zero")
-            return loss_value, grads_per_step
+            return loss_value
 
         def test_step(x, y):
             val_logits = model(x, training=False)
@@ -362,14 +354,12 @@ def train(args):
 
         @tf.function
         def distributed_train_step(dataset_inputs, data_labels):
-            per_replica_losses, grads_per_step = strategy.run(train_step, args=(dataset_inputs, data_labels))
-            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None), strategy.reduce(tf.distribute.ReduceOp.SUM, grads_per_step, axis=None)
-
+            per_replica_losses = strategy.run(train_step, args=(dataset_inputs, data_labels))
+            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None)
         @tf.function
         def distributed_train_step_consistency(dataset_inputs_1, dataset_inputs_2, data_labels):
-            per_replica_losses, grads_per_step = strategy.run(train_step_consistency, args=(dataset_inputs_1, dataset_inputs_2, data_labels))
-            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None), strategy.reduce(tf.distribute.ReduceOp.SUM, grads_per_step, axis=None)
-
+            per_replica_losses = strategy.run(train_step_consistency, args=(dataset_inputs_1, dataset_inputs_2, data_labels))
+            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None)
         @tf.function
         def distributed_test_step(dataset_inputs, data_labels):
             return strategy.run(test_step, args=(dataset_inputs, data_labels))
@@ -411,6 +401,17 @@ def train(args):
                     images = images[idx]
                     labels = labels[idx]
 
+                # dropblock happens before PGD?
+                if args.gradientGuidedDropBlock:
+                    grads = model.calculateGradients(images, labels)
+                    # perform dropblock per sample based on gradients - mutating the training images
+                    images_dropped_blocks = model.data_aug.augmentData_batch_erasing_grad_guided(images,
+                                                                                                 trainData.dropBlock_iterationCount,
+                                                                                                 grads)
+                    trainData[i] = images_dropped_blocks, labels
+                    trainData.dropBlock_iterationCount += 1
+
+
                 if args.pgd != 0:
                     # todo: what's the visual difference between an AD and a normal (what are the differences we need)
 
@@ -436,16 +437,11 @@ def train(args):
                             images2 = np.clip(images2, 0, 1)  # ensure valid pixel range
 
                 if args.consistency == 0:
-                    loss_value, grads_per_step = distributed_train_step(images, labels)
+                    loss_value = distributed_train_step(images, labels)
                 else:
-                    loss_value, grads_per_step = distributed_train_step_consistency(images, images2, labels)
+                    loss_value = distributed_train_step_consistency(images, images2, labels)
                     # todo: what will the corresponding one on consistency loss looks like
 
-                if args.gradientGuidedDropBlock:
-                    # perform dropblock per sample based on gradients - mutating the training images
-                    images_dropped_blocks = model.data_aug.augmentData_batch_erasing_grad_guided(images, trainData.dropBlock_iterationCount, grads_per_step)
-                    trainData[i] = images_dropped_blocks, labels
-                    trainData.dropBlock_iterationCount += 1
 
                 train_acc = train_acc_metric.result()
                 print("Training loss %.4f at step %d/%d at Epoch %d with current accuracy %.4f" % (
