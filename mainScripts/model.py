@@ -404,8 +404,6 @@ def train(args):
                     grads = model.calculateGradients(images, labels)
                     # perform dropblock per sample based on gradients - mutating the training images
                     images = model.data_aug.augmentData_batch_erasing_grad_guided(images, trainData.dropBlock_iterationCount, grads)
-
-
                     trainData.dropBlock_iterationCount += 1
 
 
