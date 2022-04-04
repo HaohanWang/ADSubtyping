@@ -333,7 +333,7 @@ def train(args):
 
             train_acc_metric.update_state(y, logits)
             if args.gradientGuidedDropBlock:
-                grads_per_step = tf.squeeze(dropblock_tape.gradient(loss_value, x, unconnected_gradients="zero"))
+                grads_per_step = dropblock_tape.gradient(loss_value, x, unconnected_gradients="zero")
             return loss_value, grads_per_step
 
         def train_step_consistency(x, z, y):
@@ -353,7 +353,7 @@ def train(args):
             train_acc_metric.update_state(y, logits_2)
 
             if args.gradientGuidedDropBlock:
-                grads_per_step = tf.squeeze(dropblock_tape.gradient(loss_value, x, unconnected_gradients="zero"))
+                grads_per_step = dropblock_tape.gradient(loss_value, x, unconnected_gradients="zero")
             return loss_value, grads_per_step
 
         def test_step(x, y):
