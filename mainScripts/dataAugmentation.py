@@ -9,7 +9,7 @@ from scipy.ndimage.morphology import grey_erosion, grey_dilation
 
 
 class MRIDataAugmentation():
-    def __init__(self, imgShape, augProb, smallBlockFactor=4):
+    def __init__(self, imgShape, augProb, smallBlockFactor=6):
         self.height = imgShape[0]
         self.width = imgShape[1]
         self.depth = imgShape[2]
