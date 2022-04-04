@@ -144,7 +144,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
             self.dense2 = layers.Dense(units=128, activation="relu")
             self.classifier = layers.Dense(units=nClass, activation="relu")
 
-        self.gradients_inputs = np.zeros((169, 208, 179))
+            self.data_aug = MRIDataAugmentation((169, 208, 179), 0.5)
 
     def call(self, inputs, training=None, mask=None):
         x = self.conv1(inputs)
@@ -306,8 +306,6 @@ def train(args):
 
     with strategy.scope():
         model = MRIImaging3DConvModel(nClass=num_classes, args=args)
-        if args.gradientGuidedDropBlock:
-            model.gradients_inputs = np.zeros((169, 208, 179))
         opt = optimizers.Adam(learning_rate=5e-6)
         loss_fn = losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
 
@@ -335,8 +333,7 @@ def train(args):
 
             train_acc_metric.update_state(y, logits)
             if args.gradientGuidedDropBlock:
-                grads = tf.squeeze(dropblock_tape.gradient(loss_value, x, unconnected_gradients="zero"))
-                grads_per_step = tf.reduce_sum(grads, axis=0)
+                grads_per_step = tf.squeeze(dropblock_tape.gradient(loss_value, x, unconnected_gradients="zero"))
             return loss_value, grads_per_step
 
         def train_step_consistency(x, z, y):
@@ -356,8 +353,7 @@ def train(args):
             train_acc_metric.update_state(y, logits_2)
 
             if args.gradientGuidedDropBlock:
-                grads = tf.squeeze(dropblock_tape.gradient(loss_value, x, unconnected_gradients="zero"))
-                grads_per_step = tf.reduce_sum(grads, axis=0)
+                grads_per_step = tf.squeeze(dropblock_tape.gradient(loss_value, x, unconnected_gradients="zero"))
             return loss_value, grads_per_step
 
         def test_step(x, y):
@@ -391,8 +387,7 @@ def train(args):
             model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_2')
 
         for epoch in range(1, args.epochs + 1):
-            # reset the total accumulated gradients wrt all images in training set for gradient-guided dropblock
-            model.gradients_inputs = np.zeros((169, 208, 179))
+
 
             if epoch <= args.continueEpoch:
                 continue
@@ -447,7 +442,10 @@ def train(args):
                     # todo: what will the corresponding one on consistency loss looks like
 
                 if args.gradientGuidedDropBlock:
-                    model.gradients_inputs += grads_per_step.numpy()
+                    # perform dropblock per sample based on gradients - mutating the training images
+                    images_dropped_blocks = model.data_aug.augmentData_batch_erasing_grad_guided(images, trainData.dropBlock_iterationCount, grads_per_step)
+                    trainData[i] = images_dropped_blocks, labels
+                    trainData.dropBlock_iterationCount += 1
 
                 train_acc = train_acc_metric.result()
                 print("Training loss %.4f at step %d/%d at Epoch %d with current accuracy %.4f" % (
@@ -460,11 +458,6 @@ def train(args):
 
             train_acc_metric.reset_states()
             print("with: %.2f seconds" % (time.time() - start_time), end='\t')
-
-            # perform gradient-guided drop block instead of random dropblock
-            if args.gradientGuidedDropBlock:
-                # update the accumulated gradients w.r.t all training images at the end of each epoch
-                trainData.drop_block_gradients = model.gradients_inputs
 
             for i in range(total_step_val):
                 images, labels = validationData[i]
