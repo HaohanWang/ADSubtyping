@@ -399,14 +399,6 @@ def train(args):
                     images = images[idx]
                     labels = labels[idx]
 
-                # dropblock happens before PGD?
-                if args.gradientGuidedDropBlock:
-                    grads = model.calculateGradients(images, labels)
-                    # perform dropblock per sample based on gradients - mutating the training images
-                    images = model.data_aug.augmentData_batch_erasing_grad_guided(images, trainData.dropBlock_iterationCount, grads)
-                    trainData.dropBlock_iterationCount += 1
-
-
                 if args.pgd != 0:
                     # todo: what's the visual difference between an AD and a normal (what are the differences we need)
 
@@ -431,12 +423,17 @@ def train(args):
                                              images2 + args.pgd)
                             images2 = np.clip(images2, 0, 1)  # ensure valid pixel range
 
+                if args.gradientGuidedDropBlock:
+                    grads = model.calculateGradients(images, labels)
+                    # perform dropblock per sample based on gradients - mutating the training images
+                    images = model.data_aug.augmentData_batch_erasing_grad_guided(images, trainData.dropBlock_iterationCount, grads)
+                    trainData.dropBlock_iterationCount += 1
+
                 if args.consistency == 0:
                     loss_value = distributed_train_step(images, labels)
                 else:
                     loss_value = distributed_train_step_consistency(images, images2, labels)
                     # todo: what will the corresponding one on consistency loss looks like
-
 
                 train_acc = train_acc_metric.result()
                 print("Training loss %.4f at step %d/%d at Epoch %d with current accuracy %.4f" % (
