@@ -377,8 +377,6 @@ def train(args):
             model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_2')
 
         for epoch in range(1, args.epochs + 1):
-
-
             if epoch <= args.continueEpoch:
                 continue
 
@@ -405,10 +403,9 @@ def train(args):
                 if args.gradientGuidedDropBlock:
                     grads = model.calculateGradients(images, labels)
                     # perform dropblock per sample based on gradients - mutating the training images
-                    images_dropped_blocks = model.data_aug.augmentData_batch_erasing_grad_guided(images,
-                                                                                                 trainData.dropBlock_iterationCount,
-                                                                                                 grads)
-                    trainData[i] = images_dropped_blocks, labels
+                    images = model.data_aug.augmentData_batch_erasing_grad_guided(images, trainData.dropBlock_iterationCount, grads)
+
+
                     trainData.dropBlock_iterationCount += 1
 
 
