@@ -59,7 +59,6 @@ class MRIDataGenerator(keras.utils.Sequence):
         self.on_epoch_end()
 
         self.dataAugmentation = MRIDataAugmentation(self.dim, 0.5)
-        self.drop_block_gradients = None
 
     def __len__(self):
         self.on_epoch_end()
@@ -74,9 +73,6 @@ class MRIDataGenerator(keras.utils.Sequence):
                         images = self.dataAugmentation.augmentData_batch_withLabel(images, labels)
                     if self.dropBlock:
                         images = self.dataAugmentation.augmentData_batch_erasing(images, self.dropBlock_iterationCount)
-                        self.dropBlock_iterationCount += 1
-                    elif self.gradientGuidedDropBlock and self.drop_block_gradients is not None:
-                        images = self.dataAugmentation.augmentData_batch_erasing_grad_guided(images, self.dropBlock_iterationCount, self.drop_block_gradients)
                         self.dropBlock_iterationCount += 1
                     images = self.dataAugmentation.augmentData_batch(images)
 
