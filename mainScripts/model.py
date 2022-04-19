@@ -98,7 +98,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
                 self.pool5 = layers.MaxPool3D(pool_size=2)
 
             # Dropblock 3D for feature maps
-            self.dropblock = DropBlock3D(keep_prob=0.85, block_size=3)
+            self.dropblock = DropBlock3D(keep_prob=0.9, block_size=1)
 
             self.gap = layers.Flatten()
             self.dp = layers.Dropout(0.5)
@@ -142,7 +142,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
                 self.pool5 = layers.MaxPool3D(pool_size=2)
 
             # Dropblock 3D for feature maps
-            self.dropblock = DropBlock3D(keep_prob=0.9, block_size=3)
+            self.dropblock = DropBlock3D(keep_prob=0.9, block_size=1)
 
             self.gap = layers.Flatten()
             self.dp = layers.Dropout(0.5)
@@ -386,9 +386,9 @@ def train(args):
         if args.continueEpoch != 0:
             #model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
             model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_48')
-        elif args.dropBlock or args.worst_sample or args.gradientGuidedDropBlock:
+        elif args.dropBlock or args.worst_sample or args.gradientGuidedDropBlock or args.dropBlock3D:
             # dropblock training is too hard, so let's load the previous one to continue as epoch 1
-            model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_2')
+            model.load_weights(WEIGHTS_DIR + 'weights_regular_training/weights_aug_fold_0_seed_1_epoch_50')
 
         for epoch in range(1, args.epochs + 1):
             if epoch <= args.continueEpoch:
