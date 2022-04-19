@@ -98,8 +98,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
                 self.pool5 = layers.MaxPool3D(pool_size=2)
 
             # Dropblock 3D for feature maps
-            if args.dropBlock3D:
-                self.dropblock = DropBlock3D()
+            self.dropblock = DropBlock3D(keep_prob=0.85, block_size=3)
 
             self.gap = layers.Flatten()
             self.dp = layers.Dropout(0.5)
@@ -143,8 +142,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
                 self.pool5 = layers.MaxPool3D(pool_size=2)
 
             # Dropblock 3D for feature maps
-            if args.dropBlock3D:
-                self.dropblock = DropBlock3D()
+            self.dropblock = DropBlock3D(keep_prob=0.85, block_size=3)
 
             self.gap = layers.Flatten()
             self.dp = layers.Dropout(0.5)
@@ -175,6 +173,12 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = self.bn5(x)
         x = tf.nn.relu(x)
         x = self.pool5(x)
+
+        print('input shape before dropblock 3D:')
+        print(x.shape)
+        if args.dropBlock3D:
+            x = self.dropblock(x)
+
         x = self.gap(x)
         x = self.dp(x)
         x = self.dense1(x)
@@ -208,6 +212,10 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = tf.nn.relu(x)
 
         x = self.pool5(x)
+
+        if args.dropBlock3D:
+            x = self.dropblock(x)
+
         x = self.gap(x)
         x = self.dp(x)
         x = self.dense1(x)  # the representation with 1024 values
