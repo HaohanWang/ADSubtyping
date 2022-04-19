@@ -135,3 +135,10 @@ class DropBlock3D(tf.keras.layers.Layer):
                                 'SAME')
         mask = 1 - mask
         return mask
+
+
+
+
+class LinearScheduler(tf.keras.layers.Layer):
+    def __init__(self, dropblock, start_value, stop_value, nr_steps):
+        self.dropblock = dropblock

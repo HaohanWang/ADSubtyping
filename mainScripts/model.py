@@ -24,8 +24,8 @@ from cleverhans.tf2.attacks.projected_gradient_descent import projected_gradient
 from DataGenerator import MRIDataGenerator, MRIDataGenerator_Simple
 from dataAugmentation import MRIDataAugmentation
 
-# from SaliencyMapGenerator import SaliencyMapGenerator
 from ActivationMaximization import ActivationMaximizer
+from DropBlock3DTF import DropBlock3D
 
 
 if psutil.Process().username() == 'haohanwang':
@@ -97,6 +97,10 @@ class MRIImaging3DConvModel(tf.keras.Model):
             else:
                 self.pool5 = layers.MaxPool3D(pool_size=2)
 
+            # Dropblock 3D for feature maps
+            if args.dropBlock3D:
+                self.dropblock = DropBlock3D()
+
             self.gap = layers.Flatten()
             self.dp = layers.Dropout(0.5)
             self.dense1 = layers.Dense(units=1024, activation="relu")
@@ -137,6 +141,10 @@ class MRIImaging3DConvModel(tf.keras.Model):
                 self.pool5 = minMaxPool(pool_size=2)
             else:
                 self.pool5 = layers.MaxPool3D(pool_size=2)
+
+            # Dropblock 3D for feature maps
+            if args.dropBlock3D:
+                self.dropblock = DropBlock3D()
 
             self.gap = layers.Flatten()
             self.dp = layers.Dropout(0.5)
@@ -1184,6 +1192,7 @@ if __name__ == "__main__":
                         help='whether we drop half of the information of the images')
     parser.add_argument('-o', '--gradientGuidedDropBlock', type=int, default=0,
                         help='whether we perform gradient guided dropBlock')
+    parser.add_argument('-h', '--dropBlock3D', type=int, default=0, help='whether we perform 3D dropblock on conv layers')
     parser.add_argument('-r', '--worst_sample', type=int, default=0, help='whether we use min max pooling')
     parser.add_argument('-y', '--consistency', type=float, default=0, help='whether we use min max pooling')
     parser.add_argument('-t', '--gpu', type=str, default=0,
