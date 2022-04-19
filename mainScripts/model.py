@@ -55,7 +55,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
     def __init__(self, nClass, args):
         super(MRIImaging3DConvModel, self).__init__()
 
-        if args.continueEpoch == 0 and args.dropBlock == 0 and args.gradientGuidedDropBlock == 0:
+        if args.continueEpoch == 0 and args.dropBlock == 0 and args.gradientGuidedDropBlock == 0 and args.dropBlock3D == 0:
             self.weights_folder = '../pretrainModels/best_model/fold_' + str(args.idx_fold) + '/npy_weights/'
             self.conv1 = layers.Conv3D(filters=8, kernel_size=3,
                                        weights=self.setConvWeights(0))
