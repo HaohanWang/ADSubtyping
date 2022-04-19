@@ -32,8 +32,8 @@ if psutil.Process().username() == 'haohanwang':
     READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
     WEIGHTS_DIR = 'weights/'
 else:
-    READ_DIR = '/home/ec2-user/alzstudy/AlzheimerData/'
-    WEIGHTS_DIR = '/home/ec2-user/alzstudy/weights/'
+    READ_DIR = '/home/ec2-user/mnt/home/ec2-user/alzstudy/AlzheimerData/'
+    WEIGHTS_DIR = '/home/ec2-user/mnt/home/ec2-user/alzstudy/weights/'
 
 
 class minMaxPool(tf.keras.layers.Layer):
@@ -1200,7 +1200,7 @@ if __name__ == "__main__":
                         help='whether we drop half of the information of the images')
     parser.add_argument('-o', '--gradientGuidedDropBlock', type=int, default=0,
                         help='whether we perform gradient guided dropBlock')
-    parser.add_argument('-h', '--dropBlock3D', type=int, default=0, help='whether we perform 3D dropblock on conv layers')
+    parser.add_argument('-q', '--dropBlock3D', type=int, default=0, help='whether we perform 3D dropblock on conv layers')
     parser.add_argument('-r', '--worst_sample', type=int, default=0, help='whether we use min max pooling')
     parser.add_argument('-y', '--consistency', type=float, default=0, help='whether we use min max pooling')
     parser.add_argument('-t', '--gpu', type=str, default=0,
