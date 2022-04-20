@@ -174,7 +174,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = tf.nn.relu(x)
         x = self.pool5(x)
 
-        if args.dropBlock3D:
+        if training and args.dropBlock3D:
             x = self.dropblock(x)
 
         x = self.gap(x)
@@ -210,10 +210,6 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = tf.nn.relu(x)
 
         x = self.pool5(x)
-
-        if args.dropBlock3D:
-            x = self.dropblock(x)
-
         x = self.gap(x)
         x = self.dp(x)
         x = self.dense1(x)  # the representation with 1024 values
