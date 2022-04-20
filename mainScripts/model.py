@@ -969,10 +969,9 @@ def saliency(args):
             gradients = tape.gradient(loss, images)
             gradients = gradients.numpy()
 
-            # saliency_maps = tf.reduce_max(tf.abs(gradients), axis=-1)
+            saliency_maps = tf.reduce_max(tf.abs(gradients), axis=-1)
 
-            # raw 3D saliency
-            for sal, subject_id, session_id in zip(gradients, subject_ids, session_ids):
+            for sal, subject_id, session_id in zip(saliency_maps, subject_ids, session_ids):
                 makedirs(join(save_dir, split, subject_id), exist_ok=True)
                 np.save(join(save_dir, split, subject_id, session_id + '.npy'), sal)
 
