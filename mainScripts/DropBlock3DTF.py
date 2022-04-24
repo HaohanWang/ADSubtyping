@@ -140,5 +140,5 @@ class DropBlock3D(tf.keras.layers.Layer):
 
 
 class LinearScheduler(tf.keras.layers.Layer):
-    def __init__(self, dropblock, start_value, stop_value, nr_steps):
+    def __init__(self, dropblock, start_value=1.0, stop_value=0.5, nr_steps=10):
         self.dropblock = dropblock
