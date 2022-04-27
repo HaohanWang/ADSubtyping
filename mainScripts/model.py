@@ -98,7 +98,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
                 self.pool5 = layers.MaxPool3D(pool_size=2)
 
             # Dropblock 3D for feature maps
-            self.dropblock = DropBlock3D(keep_prob=0.9, block_size=1)
+            self.dropblock = DropBlock3D(keep_prob=0.70, block_size=2)
 
             self.gap = layers.Flatten()
             self.dp = layers.Dropout(0.5)
@@ -142,7 +142,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
                 self.pool5 = layers.MaxPool3D(pool_size=2)
 
             # Dropblock 3D for feature maps
-            self.dropblock = DropBlock3D(keep_prob=0.9, block_size=1)
+            self.dropblock = DropBlock3D(keep_prob=0.70, block_size=2)
 
             self.gap = layers.Flatten()
             self.dp = layers.Dropout(0.5)

@@ -90,10 +90,6 @@ class DropBlock3D(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         assert len(input_shape) == 5
-
-        print('in dropblock 3d build:')
-        print(input_shape)
-
         _, self.d, self.h, self.w, self.channel = input_shape.as_list()
         # pad the mask
         p1 = (self.block_size - 1) // 2
