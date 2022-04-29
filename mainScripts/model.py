@@ -98,10 +98,11 @@ class MRIImaging3DConvModel(tf.keras.Model):
                 self.pool5 = layers.MaxPool3D(pool_size=2)
 
             # Dropblock 3D for feature maps
-            self.dropblock = DropBlock3D(keep_prob=0.70, block_size=2)
+            self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
+            self.dropblock_flatten = layers.Dropout
 
             self.gap = layers.Flatten()
-            self.dp = layers.Dropout(0.5)
+            self.dp = layers.Dropout(0.7)
             self.dense1 = layers.Dense(units=1024, activation="relu")
             self.dense2 = layers.Dense(units=128, activation="relu")
             self.classifier = layers.Dense(units=nClass, activation="relu")
@@ -142,10 +143,10 @@ class MRIImaging3DConvModel(tf.keras.Model):
                 self.pool5 = layers.MaxPool3D(pool_size=2)
 
             # Dropblock 3D for feature maps
-            self.dropblock = DropBlock3D(keep_prob=0.70, block_size=2)
+            self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
 
             self.gap = layers.Flatten()
-            self.dp = layers.Dropout(0.5)
+            self.dp = layers.Dropout(0.7)
             self.dense1 = layers.Dense(units=1024, activation="relu")
             self.dense2 = layers.Dense(units=128, activation="relu")
             self.classifier = layers.Dense(units=nClass, activation="relu")
