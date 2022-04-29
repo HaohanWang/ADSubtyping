@@ -102,6 +102,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
             self.dropblock_flatten = layers.Dropout
 
             self.gap = layers.Flatten()
+            # self.dp = layers.Dropout(0.5)
             self.dp = layers.Dropout(0.7)
             self.dense1 = layers.Dense(units=1024, activation="relu")
             self.dense2 = layers.Dense(units=128, activation="relu")
@@ -146,6 +147,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
             self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
 
             self.gap = layers.Flatten()
+            # self.dp = layers.Dropout(0.5)
             self.dp = layers.Dropout(0.7)
             self.dense1 = layers.Dense(units=1024, activation="relu")
             self.dense2 = layers.Dense(units=128, activation="relu")
@@ -179,6 +181,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
             x = self.dropblock(x)
 
         x = self.gap(x)
+
         x = self.dp(x)
         x = self.dense1(x)
         x = self.dense2(x)
