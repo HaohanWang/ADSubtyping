@@ -25,7 +25,7 @@ from DataGenerator import MRIDataGenerator, MRIDataGenerator_Simple
 from dataAugmentation import MRIDataAugmentation
 
 from ActivationMaximization import ActivationMaximizer
-from DropBlock3DTF import DropBlock3D
+from DropBlock3DTF import DropBlock3D, DropBlockFlatten
 
 
 if psutil.Process().username() == 'haohanwang':
@@ -99,11 +99,12 @@ class MRIImaging3DConvModel(tf.keras.Model):
 
             # Dropblock 3D for feature maps
             self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
-            self.dropblock_flatten = layers.Dropout
+            self.dropblock_flatten = DropBlockFlatten(keep_prob=0.7, block_size=8*8*8)
 
-            self.gap = layers.Flatten()
-            # self.dp = layers.Dropout(0.5)
-            self.dp = layers.Dropout(0.7)
+            self.flatten = layers.Flatten()
+
+
+            self.dp = layers.Dropout(0.5)
             self.dense1 = layers.Dense(units=1024, activation="relu")
             self.dense2 = layers.Dense(units=128, activation="relu")
             self.classifier = layers.Dense(units=nClass, activation="relu")
@@ -143,12 +144,12 @@ class MRIImaging3DConvModel(tf.keras.Model):
             else:
                 self.pool5 = layers.MaxPool3D(pool_size=2)
 
-            # Dropblock 3D for feature maps
+            # Dropblock for feature maps, before / after the flatten layer
             self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
+            self.dropblock_flatten = DropBlockFlatten(keep_prob=0.7, block_size=8 * 8 * 8)
 
-            self.gap = layers.Flatten()
-            # self.dp = layers.Dropout(0.5)
-            self.dp = layers.Dropout(0.7)
+            self.flatten = layers.Flatten()
+            self.dp = layers.Dropout(0.5)
             self.dense1 = layers.Dense(units=1024, activation="relu")
             self.dense2 = layers.Dense(units=128, activation="relu")
             self.classifier = layers.Dense(units=nClass, activation="relu")
@@ -177,10 +178,12 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = tf.nn.relu(x)
         x = self.pool5(x)
 
+        x = self.flatten(x)
         if training and args.dropBlock3D:
-            x = self.dropblock(x)
+            x = tf.reshape(x, [x.shape[0], -1, 1])
+            x = self.dropblock_flatten(x)
 
-        x = self.gap(x)
+            x = tf.reshape(x, [x.shape[0], x.shape[1]])
 
         x = self.dp(x)
         x = self.dense1(x)
@@ -214,7 +217,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = tf.nn.relu(x)
 
         x = self.pool5(x)
-        x = self.gap(x)
+        x = self.flatten(x)
         x = self.dp(x)
         x = self.dense1(x)  # the representation with 1024 values
         return x
