@@ -188,8 +188,10 @@ class MRIImaging3DConvModel(tf.keras.Model):
             print(x.shape)
             x = self.dropblock_flatten(x)
 
-        # print("input shape after FLATTENED: ")
-        # print(x.shape)
+            x = tf.reshape(x, [x.shape[0], x.shape[1]])
+        print("input shape after FLATTENED: ")
+        print(x.shape)
+
         x = self.dp(x)
         x = self.dense1(x)
         x = self.dense2(x)

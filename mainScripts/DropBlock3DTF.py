@@ -28,7 +28,8 @@ class DropBlockFlatten(tf.keras.layers.Layer):
         return config
 
     def compute_output_shape(self, input_shape):
-        return input_shape
+        return
+        # return input_shape
 
     def build(self, input_shape):
         assert len(input_shape) == 3
