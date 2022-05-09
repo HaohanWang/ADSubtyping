@@ -144,7 +144,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
             else:
                 self.pool5 = layers.MaxPool3D(pool_size=2)
 
-            # Dropblock 3D for feature maps
+            # Dropblock for feature maps, before / after the flatten layer
             self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
             self.dropblock_flatten = DropBlockFlatten(keep_prob=0.7, block_size=8 * 8 * 8)
 
@@ -178,19 +178,12 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = tf.nn.relu(x)
         x = self.pool5(x)
 
-
         x = self.flatten(x)
         if training and args.dropBlock3D:
-            # print("input shape to dropblock after flatten: ")
-            # print(x.shape)
             x = tf.reshape(x, [x.shape[0], -1, 1])
-            print('x after reshape, before drop')
-            print(x.shape)
             x = self.dropblock_flatten(x)
 
             x = tf.reshape(x, [x.shape[0], x.shape[1]])
-        print("input shape after FLATTENED: ")
-        print(x.shape)
 
         x = self.dp(x)
         x = self.dense1(x)

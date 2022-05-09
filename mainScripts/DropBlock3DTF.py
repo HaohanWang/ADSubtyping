@@ -1,7 +1,6 @@
-# https://github.com/mbonyani/DropBlock-tf/blob/main/utils/DropBlock.py
+# 2D and 3D implementations: https://github.com/mbonyani/DropBlock-tf/blob/main/utils/DropBlock.py
 # =============================
 
-import tensorflow as tf
 from tensorflow.python.keras import backend as K
 
 import tensorflow as tf
@@ -28,8 +27,7 @@ class DropBlockFlatten(tf.keras.layers.Layer):
         return config
 
     def compute_output_shape(self, input_shape):
-        return
-        # return input_shape
+        return input_shape
 
     def build(self, input_shape):
         assert len(input_shape) == 3
