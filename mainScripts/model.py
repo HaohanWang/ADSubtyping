@@ -183,6 +183,9 @@ class MRIImaging3DConvModel(tf.keras.Model):
         if training and args.dropBlock3D:
             # print("input shape to dropblock after flatten: ")
             # print(x.shape)
+            x = tf.reshape(x, [x.shape[0], -1, 1])
+            print('x after reshape, before drop')
+            print(x.shape)
             x = self.dropblock_flatten(x)
 
         # print("input shape after FLATTENED: ")
