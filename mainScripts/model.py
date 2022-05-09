@@ -101,9 +101,10 @@ class MRIImaging3DConvModel(tf.keras.Model):
             self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
             self.dropblock_flatten = layers.Dropout
 
-            self.gap = layers.Flatten()
-            # self.dp = layers.Dropout(0.5)
-            self.dp = layers.Dropout(0.7)
+            self.flatten = layers.Flatten()
+
+
+            self.dp = layers.Dropout(0.5)
             self.dense1 = layers.Dense(units=1024, activation="relu")
             self.dense2 = layers.Dense(units=128, activation="relu")
             self.classifier = layers.Dense(units=nClass, activation="relu")
@@ -146,9 +147,11 @@ class MRIImaging3DConvModel(tf.keras.Model):
             # Dropblock 3D for feature maps
             self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
 
-            self.gap = layers.Flatten()
-            # self.dp = layers.Dropout(0.5)
-            self.dp = layers.Dropout(0.7)
+            self.flatten = layers.Flatten()
+
+
+
+            self.dp = layers.Dropout(0.5)
             self.dense1 = layers.Dense(units=1024, activation="relu")
             self.dense2 = layers.Dense(units=128, activation="relu")
             self.classifier = layers.Dense(units=nClass, activation="relu")
@@ -178,10 +181,15 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = self.pool5(x)
 
         if training and args.dropBlock3D:
+            print("input shape to dropblock 3D: ")
+            print(x.shape)
+
             x = self.dropblock(x)
 
-        x = self.gap(x)
+        x = self.flatten(x)
 
+        print("input shape after FLATTENED: ")
+        print(x.shape)
         x = self.dp(x)
         x = self.dense1(x)
         x = self.dense2(x)
@@ -214,7 +222,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = tf.nn.relu(x)
 
         x = self.pool5(x)
-        x = self.gap(x)
+        x = self.flatten(x)
         x = self.dp(x)
         x = self.dense1(x)  # the representation with 1024 values
         return x
