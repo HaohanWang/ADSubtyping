@@ -25,7 +25,7 @@ from DataGenerator import MRIDataGenerator, MRIDataGenerator_Simple
 from dataAugmentation import MRIDataAugmentation
 
 from ActivationMaximization import ActivationMaximizer
-from DropBlock3DTF import DropBlock3D
+from DropBlock3DTF import DropBlock3D, DropBlockFlatten
 
 
 if psutil.Process().username() == 'haohanwang':
@@ -99,7 +99,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
 
             # Dropblock 3D for feature maps
             self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
-            self.dropblock_flatten = layers.Dropout
+            self.dropblock_flatten = DropBlockFlatten(keep_prob=0.7, block_size=8*8*8)
 
             self.flatten = layers.Flatten()
 
@@ -146,11 +146,9 @@ class MRIImaging3DConvModel(tf.keras.Model):
 
             # Dropblock 3D for feature maps
             self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
+            self.dropblock_flatten = DropBlockFlatten(keep_prob=0.7, block_size=8 * 8 * 8)
 
             self.flatten = layers.Flatten()
-
-
-
             self.dp = layers.Dropout(0.5)
             self.dense1 = layers.Dense(units=1024, activation="relu")
             self.dense2 = layers.Dense(units=128, activation="relu")
@@ -180,16 +178,15 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = tf.nn.relu(x)
         x = self.pool5(x)
 
-        if training and args.dropBlock3D:
-            print("input shape to dropblock 3D: ")
-            print(x.shape)
-
-            x = self.dropblock(x)
 
         x = self.flatten(x)
+        if training and args.dropBlock3D:
+            # print("input shape to dropblock after flatten: ")
+            # print(x.shape)
+            x = self.dropblock_flatten(x)
 
-        print("input shape after FLATTENED: ")
-        print(x.shape)
+        # print("input shape after FLATTENED: ")
+        # print(x.shape)
         x = self.dp(x)
         x = self.dense1(x)
         x = self.dense2(x)

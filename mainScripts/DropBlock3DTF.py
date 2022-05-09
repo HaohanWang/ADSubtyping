@@ -32,7 +32,7 @@ class DropBlockFlatten(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         assert len(input_shape) == 3
-        _, self.size, self.channel = input_shape.as_list()
+        _, self.size = input_shape.as_list()
         # pad the mask
         p1 = (self.block_size - 1) // 2
         p0 = (self.block_size - 1) - p1
@@ -66,8 +66,7 @@ class DropBlockFlatten(tf.keras.layers.Layer):
 
     def _create_mask(self, input_shape):
         sampling_mask_shape = tf.stack([input_shape[0],
-                                        self.size - self.block_size + 1,
-                                        self.channel])
+                                        self.size - self.block_size + 1])
         mask = _bernoulli(sampling_mask_shape, self.gamma)
         mask = tf.pad(mask, self.padding)
         mask = tf.nn.max_pool(mask, [1, self.block_size, 1], [1, 1, 1], 'SAME')
