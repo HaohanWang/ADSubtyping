@@ -31,7 +31,7 @@ class DropBlockFlatten(tf.keras.layers.Layer):
         return input_shape
 
     def build(self, input_shape):
-        assert len(input_shape) == 3
+        assert len(input_shape) == 2
         _, self.size = input_shape.as_list()
         # pad the mask
         p1 = (self.block_size - 1) // 2
