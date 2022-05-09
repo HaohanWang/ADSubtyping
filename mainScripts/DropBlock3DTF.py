@@ -69,7 +69,7 @@ class DropBlockFlatten(tf.keras.layers.Layer):
                                         self.size - self.block_size + 1])
         mask = _bernoulli(sampling_mask_shape, self.gamma)
         mask = tf.pad(mask, self.padding)
-        mask = tf.nn.max_pool1d(mask, self.block_size, 1, 'SAME')
+        mask = tf.nn.max_pool(mask, self.block_size, 1, 'SAME')
         mask = 1 - mask
         return mask
 
