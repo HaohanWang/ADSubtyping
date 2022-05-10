@@ -88,15 +88,16 @@ def drawFromPath(path, label, save_dir='2d_view', order=None):
         print("Subject example not found in {}".format(path))
         return
 
-    sal_mean = np.mean(ex_sal)
-    sal_std = np.std(ex_sal)
-
-    # zero-out small, insignificant saliency / gradients
-    ex_sal = np.where(ex_sal < sal_mean - 1.5*sal_std, 0, ex_sal)
 
     # smoothing over neighboring pixels
     kernel = np.ones([2, 2, 2]) / (2*2*2)
     ex_sal = ndimage.convolve(ex_sal, kernel, mode='constant', cval=0.0)
+
+    sal_mean = np.mean(ex_sal)
+    sal_std = np.std(ex_sal)
+
+    # zero-out small, insignificant saliency / gradients
+    ex_sal = np.where(ex_sal < sal_mean - 1.5 * sal_std, 0, ex_sal)
 
     #     im1 = ax[0].imshow(ex_sal[sagittal_idx, :, :], cmap=saliency_cmap, alpha=saliency_alpha)
     #     im2 = ax[1].imshow(ex_sal[:, coronal_idx, :], cmap=saliency_cmap, alpha=saliency_alpha)
