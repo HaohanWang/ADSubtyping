@@ -97,7 +97,7 @@ def drawFromPath(path, label, save_dir='2d_view', order=None):
     sal_std = np.std(ex_sal)
 
     # zero-out small, insignificant saliency / gradients
-    ex_sal = np.where(ex_sal < sal_mean - 1.5 * sal_std, 0, ex_sal)
+    ex_sal = np.where(ex_sal < sal_mean - 1 * sal_std, 0, ex_sal)
 
     #     im1 = ax[0].imshow(ex_sal[sagittal_idx, :, :], cmap=saliency_cmap, alpha=saliency_alpha)
     #     im2 = ax[1].imshow(ex_sal[:, coronal_idx, :], cmap=saliency_cmap, alpha=saliency_alpha)
@@ -153,6 +153,6 @@ if __name__ == '__main__':
     for p, l in tqdm(zip(snp_correct_paths, snp_correct_labels)):
         print(p)
         print(l)
-        drawFromPath(p,l, BASE_DIR + 'dropblock_after_flatten_kernel2')
+        drawFromPath(p,l, BASE_DIR + 'dropblock_clipped_after_smoothing')
 
 
