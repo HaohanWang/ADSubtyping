@@ -19,7 +19,7 @@ import psutil
 if psutil.Process().username() == 'haohanwang':
     BASE_DIR = '/media/haohanwang/Elements/'
 else:
-    BASE_DIR = '/home/ec2-user/alzstudy/AlzheimerData/'
+    BASE_DIR = '/home/ec2-user/mnt/home/ec2-user/alzstudy/AlzheimerData/'
 
 
 def sub2adni(sub):
@@ -30,7 +30,7 @@ def df2path(df, i):
     # return join('/media/haohanwang/Elements/saliency_map_dropblock2', df.split.iloc[i], df.participant_id.iloc[i], df.session_id.iloc[i] + '.npy')
     # return join(BASE_DIR + 'saliency_map_torch', df.split.iloc[i], df.participant_id.iloc[i],
     #             df.session_id.iloc[i] + '.npy')
-    return join(BASE_DIR + 'saliency_regular', df.split.iloc[i], df.participant_id.iloc[i],
+    return join(BASE_DIR + 'drop_block_after_flatten', df.split.iloc[i], df.participant_id.iloc[i],
                 df.session_id.iloc[i] + '.npy')
 
 def path2subsess(path):
@@ -89,7 +89,7 @@ def drawFromPath(path, label, save_dir='2d_view', order=None):
         return
 
     # smoothing over neighboring pixels
-    kernel = np.ones([4, 4, 4]) / (4*4*4)
+    kernel = np.ones([2, 2, 2]) / (2*2*2)
     ex_sal = ndimage.convolve(ex_sal, kernel, mode='constant', cval=0.0)
 
     #     im1 = ax[0].imshow(ex_sal[sagittal_idx, :, :], cmap=saliency_cmap, alpha=saliency_alpha)
@@ -127,11 +127,10 @@ if __name__ == '__main__':
     tmp = tmp.drop_duplicates(subset=['participant_id'])
     df_snp = tmp.reset_index(drop=True)
 
-    train_df = pd.read_csv(BASE_DIR + 'saliency_regular/train_saliency_info.csv')
-    # test_df = pd.read_csv(BASE_DIR + 'new_saliency_maps_ckp1/test_saliency_info.csv')
-    val_df = pd.read_csv(BASE_DIR + 'saliency_regular/val_saliency_info.csv')
-    # df_pred = pd.concat([train_df, test_df, val_df])
-    df_pred = pd.concat([train_df, val_df])
+    train_df = pd.read_csv(BASE_DIR + 'drop_block_after_flatten/train_saliency_info.csv')
+    test_df = pd.read_csv(BASE_DIR + 'drop_block_after_flatten/test_saliency_info.csv')
+    val_df = pd.read_csv(BASE_DIR + 'drop_block_after_flatten/val_saliency_info.csv')
+    df_pred = pd.concat([train_df, test_df, val_df])
     df_pred = df_pred.reset_index(drop=True)
 
     df_snp = df_snp.merge(df_pred, how='inner', on=['participant_id', 'session_id'])
@@ -147,6 +146,6 @@ if __name__ == '__main__':
     for p, l in tqdm(zip(snp_correct_paths, snp_correct_labels)):
         print(p)
         print(l)
-        drawFromPath(p,l, BASE_DIR + '2d_new_saliency_regular_smoothing')
+        drawFromPath(p,l, BASE_DIR + 'dropblock_after_flatten_kernel2')
 
 
