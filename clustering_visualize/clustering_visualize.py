@@ -156,6 +156,9 @@ def drawFromPath(path, label, save_dir='2d_view', order=None):
         print("Subject example not found in {}".format(path))
         return
 
+    ex_sal = (ex_sal - np.min(ex_sal)) / (np.max(ex_sal) - np.min(ex_sal))
+    ex_sal = np.where(ex_sal < 0.05, 0, ex_sal)
+
     # smoothing over neighboring pixels
     kernel = np.ones([4, 4, 4]) / (4*4*4)
     ex_sal = ndimage.convolve(ex_sal, kernel, mode='constant', cval=0.0)
