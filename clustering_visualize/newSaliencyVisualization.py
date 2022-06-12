@@ -172,7 +172,6 @@ if __name__ == '__main__':
     #
     #     drawFromPath(subj, sess, filePath, i, kernelSize, zeroOut, threshold)
 
-
     for kernelSize in [4]:
         for zeroOut in [0]:
             for threshold in [0.05]:
