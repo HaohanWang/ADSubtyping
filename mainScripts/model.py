@@ -781,14 +781,14 @@ def embedding_extractor(args):
                 info[items[0] + '#' + items[1]] = line
 
         if split == 'train' or split == 'val':
-            np.save('embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
+            np.save(READ_DIR + 'embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
                 args.continueEpoch) + '_' + dataset + '_' + split + '.npy', embedding)
-            f = open('embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
+            f = open(READ_DIR + 'embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
                 args.continueEpoch) + '_' + dataset + '_' + split + '.csv', 'w')
         else:
-            np.save('embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
+            np.save(READ_DIR + 'embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
                 args.continueEpoch) + '_' + dataset + '.npy', embedding)
-            f = open('embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
+            f = open(READ_DIR + 'embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
                 args.continueEpoch) + '_' + dataset + '.csv', 'w')
 
         for i in range(len(subjectIDs)):
