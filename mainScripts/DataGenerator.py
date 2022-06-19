@@ -10,7 +10,7 @@ import torch
 from os.path import join
 
 from dataAugmentation import MRIDataAugmentation
-import mainScripts.MCIFinetuneDataCleaning
+import MCIFinetuneDataCleaning
 
 class MRIDataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
