@@ -33,8 +33,12 @@ def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
     for sub, labels in subjects_to_labels.items():
         if "MCI" in labels:
             mci_subjects_to_new_label[sub] = 1 if labels[-1] == 'AD' else 0
-
+            print('subject to be included is in split: ' + subjects_to_split[sub])
     print(f"{len(mci_subjects_to_new_label)} MCI subjects found")
+
+
+
+
     return mci_subjects_to_new_label
 
 
