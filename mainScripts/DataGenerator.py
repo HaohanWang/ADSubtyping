@@ -32,7 +32,7 @@ class MRIDataGenerator(keras.utils.Sequence):
                  dropBlock = False,
                  dropBlockIterationStart = 0,
                  gradientGuidedDropBlock=False,
-                 MCI_finetune=False
+                 mci_finetune=False
                  ):
         # 'Initialization'
 
@@ -55,7 +55,7 @@ class MRIDataGenerator(keras.utils.Sequence):
         self.dropBlock_iterationCount = dropBlockIterationStart
         self.gradientGuidedDropBlock = gradientGuidedDropBlock
 
-        self.parse_csv_file(MCI_finetune)
+        self.parse_csv_file(mci_finetune)
         self._get_batch_split()
         self.on_epoch_end()
 
