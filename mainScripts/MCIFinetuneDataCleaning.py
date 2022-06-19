@@ -25,17 +25,14 @@ def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
         subjects_to_split[subject].add(split)
         subjects_to_labels[subject].append(csv_label)
 
-        if len(subjects_to_split[subject]) > 1:
-            print(f"OOPS! subject {subject} appears in more than one split")
-            print(subjects_to_split[subject])
-            return
+        assert len(subjects_to_split[subject]) <= 1  # sanity check to make sure a subject does not
+        # appear in more than one split
 
     print(subjects_to_labels)
 
     for sub, labels in subjects_to_labels.items():
         if "MCI" in labels:
             mci_subjects_to_new_label[sub] = 1 if labels[-1] == 'AD' else 0
-
 
     print(f"{len(mci_subjects_to_new_label)} MCI subjects found")
     return mci_subjects_to_new_label

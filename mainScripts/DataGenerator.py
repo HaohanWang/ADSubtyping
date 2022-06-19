@@ -10,7 +10,7 @@ import torch
 from os.path import join
 
 from dataAugmentation import MRIDataAugmentation
-
+from mainScripts import MCIFinetuneDataCleaning
 
 class MRIDataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
@@ -31,7 +31,8 @@ class MRIDataGenerator(keras.utils.Sequence):
                  returnSubjectID=False,
                  dropBlock = False,
                  dropBlockIterationStart = 0,
-                 gradientGuidedDropBlock=False
+                 gradientGuidedDropBlock=False,
+                 MCI_finetune=False
                  ):
         # 'Initialization'
 
@@ -54,7 +55,7 @@ class MRIDataGenerator(keras.utils.Sequence):
         self.dropBlock_iterationCount = dropBlockIterationStart
         self.gradientGuidedDropBlock = gradientGuidedDropBlock
 
-        self.parse_csv_file()
+        self.parse_csv_file(MCI_finetune)
         self._get_batch_split()
         self.on_epoch_end()
 
@@ -97,7 +98,7 @@ class MRIDataGenerator(keras.utils.Sequence):
                     images = self.transform(images)
                 return images, labels
 
-    def parse_csv_file(self):
+    def parse_csv_file(self, mci_finetune=False):
         csv_path = join(self.img_dir, f'split.pretrained.{self.idx_fold}.csv')
         text = [line.strip() for line in open(csv_path)]
         self.filePaths_AD = []
@@ -112,8 +113,17 @@ class MRIDataGenerator(keras.utils.Sequence):
         session_AD = []
         session_CN = []
         session_MCI = []
+
+        mci_subjects_to_new_label = None
+        if mci_finetune:
+            mci_subjects_to_new_label = MCIFinetuneDataCleaning.find_mci_subjects(self.img_dir, self.idx_fold)
+
         for line in text[1:]:
             items = line.split(',')
+            if mci_finetune and items[0] not in mci_subjects_to_new_label:
+                # when we finetune with MCI subjects, we exclude the subject if they do not show MCI in any of
+                # their sessions
+                continue
             if items[-1] == self.split:
                 image_path = join(self.img_dir, 'subjects', items[0], items[1], 'deeplearning_prepare_data',
                                   'image_based',

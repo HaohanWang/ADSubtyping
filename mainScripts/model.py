@@ -291,7 +291,8 @@ def train(args):
                                      augmented_fancy=args.augmented_fancy,
                                      dropBlock=args.dropBlock,
                                      dropBlockIterationStart=int(args.continueEpoch*1700/args.batch_size),
-                                     gradientGuidedDropBlock=args.gradientGuidedDropBlock)
+                                     gradientGuidedDropBlock=args.gradientGuidedDropBlock,
+                                     MCI_finetune=args.mci_finetune)
     else:
         trainData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                      split='train',
@@ -303,18 +304,21 @@ def train(args):
                                      augmented_fancy=args.augmented_fancy,
                                      dropBlock=args.dropBlock,
                                      dropBlockIterationStart=int(args.continueEpoch*1700/args.batch_size),
-                                     gradientGuidedDropBlock=args.gradientGuidedDropBlock)
+                                     gradientGuidedDropBlock=args.gradientGuidedDropBlock,
+                                     MCI_finetune=args.mci_finetune)
 
 
     validationData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                       batchSize=args.batch_size,
                                       idx_fold=args.idx_fold,
-                                      split='val')
+                                      split='val',
+                                      MCI_finetune=args.mci_finetune)
 
     testData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                 batchSize=args.batch_size,
                                 idx_fold=args.idx_fold,
-                                split='test')
+                                split='test',
+                                MCI_finetune=args.mci_finetune)
     if args.gpu:
         init_gpu(args.gpu)
     strategy = tf.distribute.MirroredStrategy()
@@ -803,19 +807,22 @@ def embedding_extractor(args):
                                       batchSize=args.batch_size,
                                       idx_fold=args.idx_fold,
                                       split='train',
-                                      returnSubjectID=True)
+                                      returnSubjectID=True,
+                                      MCI_finetune=args.mci_finetune)
 
     ADNI_valData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                     batchSize=args.batch_size,
                                     idx_fold=args.idx_fold,
                                     split='val',
-                                    returnSubjectID=True)
+                                    returnSubjectID=True,
+                                    MCI_finetune=args.mci_finetune)
 
     ADNI_testData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                      batchSize=args.batch_size,
                                      idx_fold=args.idx_fold,
                                      split='test',
-                                     returnSubjectID=True)
+                                     returnSubjectID=True,
+                                     MCI_finetune=args.mci_finetune)
 
     AIBL_testData = MRIDataGenerator_Simple(READ_DIR + 'AIBL_CAPS',
                                             'aibl_info.csv', batchSize=args.batch_size, returnSubjectID=True)
@@ -998,19 +1005,22 @@ def saliency(args):
                                       batchSize=args.batch_size,
                                       idx_fold=args.idx_fold,
                                       split='train',
-                                      returnSubjectID=True)
+                                      returnSubjectID=True,
+                                      MCI_finetune=args.mci_finetune)
     ADNI_valData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                     transform=MinMaxNormalization(),
                                     batchSize=args.batch_size,
                                     idx_fold=args.idx_fold,
                                     split='val',
-                                    returnSubjectID=True)
+                                    returnSubjectID=True,
+                                    MCI_finetune=args.mci_finetune)
     ADNI_testData = MRIDataGenerator(READ_DIR + 'ADNI_CAPS',
                                      transform=MinMaxNormalization(),
                                      batchSize=args.batch_size,
                                      idx_fold=args.idx_fold,
                                      split='test',
-                                     returnSubjectID=True)
+                                     returnSubjectID=True,
+                                     MCI_finetune=args.mci_finetune)
 
     total_step_train = math.ceil(len(ADNI_trainData) / args.batch_size)
     total_step_val = math.ceil(len(ADNI_valData) / args.batch_size)
@@ -1205,6 +1215,7 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--gpu', type=str, default=0,
                         help='specify maximum GPU ID we want to distribute the training to')
 
+    parser.add_argument('-ft', '--mci_finetune', type=int, default=0, help='whether we finetune the trained model with only MCI subjects')
     args = parser.parse_args()
 
     tf.random.set_seed(args.seed)
