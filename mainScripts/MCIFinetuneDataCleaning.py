@@ -28,7 +28,7 @@ def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
         assert len(subjects_to_split[subject]) <= 1  # sanity check to make sure a subject does not
         # appear in more than one split
 
-    print(subjects_to_labels)
+    # print(subjects_to_labels)
 
     for sub, labels in subjects_to_labels.items():
         if "MCI" in labels:
@@ -38,5 +38,4 @@ def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
     return mci_subjects_to_new_label
 
 
-print(find_mci_subjects())
 

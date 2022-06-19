@@ -168,10 +168,6 @@ class MRIDataGenerator(keras.utils.Sequence):
 
         self.totalLength = len(self.filePaths_AD) + len(self.filePaths_CN) + len(self.filePaths_MCI) * self.MCI_included
 
-        if self.mci_finetune:
-            print("sanity check: verifying totalLength is the same as the size of mci labels")
-            assert(self.totalLength == len(self.mci_labels))
-
     def on_epoch_end(self):
         if self.split == 'train':
             np.random.shuffle(self.filePaths_CN)
