@@ -9,7 +9,7 @@ READ_DIR = '/home/ec2-user/mnt/home/ec2-user/alzstudy/AlzheimerData/'
 # return the list of subjects that satisfy our criteria for finetuning
 def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
     subjects_to_labels = defaultdict(list)  # subject: [label]
-    subjects_to_split = defaultdict(list)
+    subjects_to_split = defaultdict(set)
     mci_subjects_to_new_label = {}
 
     csv_path = join(img_dir, f'split.pretrained.{idx_fold}.csv')
@@ -21,14 +21,14 @@ def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
         split = items[-1]
         csv_label = items[-2]
         subject = items[0]
-        session = items[1]
 
-        subjects_to_split[subject].append(split)
+        subjects_to_split[subject].add(split)
         subjects_to_labels[subject].append(csv_label)
 
         if len(subjects_to_split[subject]) > 1:
             print(f"OOPS! subject {subject} appears in more than one split")
             print(subjects_to_split[subject])
+            return
 
     print(subjects_to_labels)
 
