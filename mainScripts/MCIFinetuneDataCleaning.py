@@ -8,8 +8,9 @@ READ_DIR = '/home/ec2-user/mnt/home/ec2-user/alzstudy/AlzheimerData/'
 
 # return the list of subjects that satisfy our criteria for finetuning
 def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
-    subjects_to_labels = defaultdict(list) # subject: [label]
-
+    subjects_to_labels = defaultdict(list)  # subject: [label]
+    subjects_to_split = defaultdict(list)
+    mci_subjects_to_new_label = {}
 
     csv_path = join(img_dir, f'split.pretrained.{idx_fold}.csv')
     text = [line.strip() for line in open(csv_path)]
@@ -21,10 +22,24 @@ def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
         csv_label = items[-2]
         subject = items[0]
         session = items[1]
-        subjects_to_labels[subject].append(f'split: {split} session:{session} label: {csv_label}')
+
+        subjects_to_split[subject].append(split)
+        subjects_to_labels[subject].append(csv_label)
+
+        if len(subjects_to_split[subject]) > 1:
+            print(f"OOPS! subject {subject} appears in more than one split")
+            print(subjects_to_split[subject])
 
     print(subjects_to_labels)
 
+    for sub, labels in subjects_to_labels.items():
+        if "MCI" in labels:
+            mci_subjects_to_new_label[sub] = 1 if labels[-1] == 'AD' else 0
 
-find_mci_subjects()
+
+    print(f"{len(mci_subjects_to_new_label)} MCI subjects found")
+    return mci_subjects_to_new_label
+
+
+print(find_mci_subjects())
 
