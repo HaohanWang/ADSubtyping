@@ -25,8 +25,10 @@ def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS'):
             subject = items[0]
             session = items[1]
 
-            subjects_to_labels[subject].append(csv_label)
+            subjects_to_labels[subject].append(split, session, csv_label, 'split: {} session:{} label: {} ')
 
 
     print(subjects_to_labels)
+
+find_mci_subjects()
 
