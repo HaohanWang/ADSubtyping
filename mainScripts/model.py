@@ -252,10 +252,10 @@ def getSaveName(args):
         saveName = saveName + '_aug'
         if args.augmented_fancy:
             saveName = saveName + '_fancy'
-    if args.mci:
-        saveName = saveName + '_mci'
-        if args.mci_balanced:
-            saveName = saveName + '_balanced'
+    # if args.mci:
+    #     saveName = saveName + '_mci'
+    #     if args.mci_balanced:
+    #         saveName = saveName + '_balanced'
     if args.pgd != 0:
         saveName = saveName + '_pgd_' + str(args.pgd)
     if args.minmax:
