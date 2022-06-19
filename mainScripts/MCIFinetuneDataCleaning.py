@@ -32,15 +32,11 @@ def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
 
         if split == 'test' or split == 'val':
             assert("MCI" not in subjects_to_labels[subject], "test or val data should not have MCI")
-            assert(len(subjects_to_labels[subject]) == 1, "test or val data should have single label")
+            assert(len(set(subjects_to_labels[subject])) == 1, "test or val data should have single label")
         # appear in more than one split
 
     # print(subjects_to_labels)
 
-    for sub, labels in subjects_to_labels.items():
-        if "MCI" in labels:
-            mci_subjects_to_new_label[sub] = 1 if labels[-1] == 'AD' else 0
-            print('subject to be included is in split: ' + subjects_to_split[sub])
     print(f"{len(mci_subjects_to_new_label)} MCI subjects found")
 
     return mci_subjects_to_new_label
