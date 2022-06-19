@@ -10,6 +10,8 @@ READ_DIR = '/home/ec2-user/mnt/home/ec2-user/alzstudy/AlzheimerData/'
 def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
     subjects_to_labels = defaultdict(list)  # subject: [label]
     subjects_to_split = defaultdict(set)
+
+
     mci_subjects_to_new_label = {}
 
     csv_path = join(img_dir, f'split.pretrained.{idx_fold}.csv')
@@ -26,6 +28,11 @@ def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
         subjects_to_labels[subject].append(csv_label)
 
         assert len(subjects_to_split[subject]) <= 1  # sanity check to make sure a subject does not
+
+
+        if split == 'test' or split == 'val':
+            assert("MCI" not in subjects_to_labels[subject], "test or val data should not have MCI")
+            assert(len(subjects_to_labels[subject]) == 1, "test or val data should have single label")
         # appear in more than one split
 
     # print(subjects_to_labels)
@@ -36,10 +43,10 @@ def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
             print('subject to be included is in split: ' + subjects_to_split[sub])
     print(f"{len(mci_subjects_to_new_label)} MCI subjects found")
 
-
-
-
     return mci_subjects_to_new_label
+
+
+find_mci_subjects()
 
 
 
