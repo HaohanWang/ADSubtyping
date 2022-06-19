@@ -319,6 +319,14 @@ def train(args):
                                 idx_fold=args.idx_fold,
                                 split='test',
                                 mci_finetune=args.mci_finetune)
+
+    if args.mci_finetune:
+        print("Start finetuning the model with subjects suffering MCI")
+        print(f"Size of training data: {len(trainData)}")
+        print(f"Size of validation data: {len(validationData)}")
+        print(f"Size of test data: {len(testData)}")
+
+
     if args.gpu:
         init_gpu(args.gpu)
     strategy = tf.distribute.MirroredStrategy()

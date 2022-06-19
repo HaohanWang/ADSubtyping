@@ -54,8 +54,9 @@ class MRIDataGenerator(keras.utils.Sequence):
 
         self.dropBlock_iterationCount = dropBlockIterationStart
         self.gradientGuidedDropBlock = gradientGuidedDropBlock
+        self.mci_finetune = mci_finetune
 
-        self.parse_csv_file(mci_finetune)
+        self.parse_csv_file()
         self._get_batch_split()
         self.on_epoch_end()
 
@@ -98,7 +99,7 @@ class MRIDataGenerator(keras.utils.Sequence):
                     images = self.transform(images)
                 return images, labels
 
-    def parse_csv_file(self, mci_finetune=False):
+    def parse_csv_file(self):
         csv_path = join(self.img_dir, f'split.pretrained.{self.idx_fold}.csv')
         text = [line.strip() for line in open(csv_path)]
         self.filePaths_AD = []
@@ -114,16 +115,23 @@ class MRIDataGenerator(keras.utils.Sequence):
         session_CN = []
         session_MCI = []
 
-        mci_subjects_to_new_label = None
-        if mci_finetune:
-            mci_subjects_to_new_label = MCIFinetuneDataCleaning.find_mci_subjects(self.img_dir, self.idx_fold)
+        self.mci_labels = []
+
+        if self.mci_finetune:
+            assert(not self.MCI_included_as_soft_label, "We should not use MCI as soft label when finetuning with MCI subjects")
+            self.mci_subjects_to_new_label = MCIFinetuneDataCleaning.find_mci_subjects(self.img_dir, self.idx_fold)
 
         for line in text[1:]:
             items = line.split(',')
-            if mci_finetune and items[0] not in mci_subjects_to_new_label:
+            if self.mci_finetune and items[0] not in self.mci_subjects_to_new_label:
                 # when we finetune with MCI subjects, we exclude the subject if they do not show MCI in any of
                 # their sessions
                 continue
+
+            if self.mci_finetune:
+                self.mci_labels.append(self.mci_subjects_to_new_label[items[0]])
+
+
             if items[-1] == self.split:
                 image_path = join(self.img_dir, 'subjects', items[0], items[1], 'deeplearning_prepare_data',
                                   'image_based',
@@ -159,6 +167,10 @@ class MRIDataGenerator(keras.utils.Sequence):
                 self.sessions_test = session_AD + session_CN
 
         self.totalLength = len(self.filePaths_AD) + len(self.filePaths_CN) + len(self.filePaths_MCI) * self.MCI_included
+
+        if self.mci_finetune:
+            print("sanity check: verifying totalLength is the same as the size of mci labels")
+            assert(self.totalLength == len(self.mci_labels))
 
     def on_epoch_end(self):
         if self.split == 'train':
@@ -203,11 +215,19 @@ class MRIDataGenerator(keras.utils.Sequence):
 
         for i in range(self.batch_size_CN):
             images[i, :, :, :, 0] = self._load_one_image(self.filePaths_CN[idxlist_CN[i]])
-            labels[i, 0] = 1
+
+            if self.mci_finetune:
+                labels[i, self.mci_labels[i]] = 1
+            else:
+                labels[i, 0] = 1
 
         for i in range(self.batch_size_AD):
             images[i + self.batch_size_CN, :, :, :, 0] = self._load_one_image(self.filePaths_AD[idxlist_AD[i]])
-            labels[i + self.batch_size_CN, 1] = 1
+
+            if self.mci_finetune:
+                labels[i + self.batch_size_CN, self.mci_labels[i + self.batch_size_CN]] = 1
+            else:
+                labels[i + self.batch_size_CN, 1] = 1
 
         if self.MCI_included:
             idxlist_MCI = [*range(idx * self.batch_size_MCI, (idx + 1) * self.batch_size_MCI)]
@@ -215,14 +235,18 @@ class MRIDataGenerator(keras.utils.Sequence):
 
             for i in range(self.batch_size_MCI):
                 images[i + self.batch_size_CN + self.batch_size_AD, :, :, :, 0] = self._load_one_image(
-                    self.filePaths_AD[idxlist_MCI[i]])
+                    self.filePaths_MCI[idxlist_MCI[i]])
 
                 if self.MCI_included_as_soft_label:
                     t = np.random.random()
                     labels[i + self.batch_size_CN + self.batch_size_AD, 0] = t
                     labels[i + self.batch_size_CN + self.batch_size_AD, 1] = 1 - t
                 else:
-                    labels[i + self.batch_size_CN + self.batch_size_AD, 1] = 1
+
+                    if self.mci_finetune:
+                        labels[i + self.batch_size_CN + self.batch_size_AD, self.mci_labels[i + self.batch_size_CN + self.batch_size_AD]] = 1
+                    else:
+                        labels[i + self.batch_size_CN + self.batch_size_AD, 1] = 1
 
         return images, labels
 
@@ -237,7 +261,14 @@ class MRIDataGenerator(keras.utils.Sequence):
         sessionList = []
         for i in range(self.batch_size):
             images[i, :, :, :, 0] = self._load_one_image(self.filePaths_test[idxlist[i]])
-            labels[i] = self.labels_test[idxlist[i]]
+
+            if self.mci_finetune:
+                sub = self.subjects_test[idxlist[i]]
+                labels[i] = self.mci_subjects_to_new_label[sub]
+            else:
+                labels[i] = self.labels_test[idxlist[i]]
+
+
             subjectList.append(self.subjects_test[idxlist[i]])
             sessionList.append(self.sessions_test[idxlist[i]])
 
