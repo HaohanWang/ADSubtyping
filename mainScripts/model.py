@@ -24,16 +24,16 @@ from cleverhans.tf2.attacks.projected_gradient_descent import projected_gradient
 from DataGenerator import MRIDataGenerator, MRIDataGenerator_Simple
 from dataAugmentation import MRIDataAugmentation
 
-# from SaliencyMapGenerator import SaliencyMapGenerator
 from ActivationMaximization import ActivationMaximizer
+from DropBlock3DTF import DropBlock3D, DropBlockFlatten
 
 
 if psutil.Process().username() == 'haohanwang':
     READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
     WEIGHTS_DIR = 'weights/'
 else:
-    READ_DIR = '/home/ec2-user/alzstudy/AlzheimerData/'
-    WEIGHTS_DIR = '/home/ec2-user/alzstudy/weights/'
+    READ_DIR = '/home/ec2-user/mnt/home/ec2-user/alzstudy/AlzheimerData/'
+    WEIGHTS_DIR = '/home/ec2-user/mnt/home/ec2-user/alzstudy/weights/'
 
 
 class minMaxPool(tf.keras.layers.Layer):
@@ -55,7 +55,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
     def __init__(self, nClass, args):
         super(MRIImaging3DConvModel, self).__init__()
 
-        if args.continueEpoch == 0 and args.dropBlock == 0 and args.gradientGuidedDropBlock == 0:
+        if args.continueEpoch == 0 and args.dropBlock == 0 and args.gradientGuidedDropBlock == 0 and args.dropBlock3D == 0:
             self.weights_folder = '../pretrainModels/best_model/fold_' + str(args.idx_fold) + '/npy_weights/'
             self.conv1 = layers.Conv3D(filters=8, kernel_size=3,
                                        weights=self.setConvWeights(0))
@@ -97,8 +97,13 @@ class MRIImaging3DConvModel(tf.keras.Model):
             else:
                 self.pool5 = layers.MaxPool3D(pool_size=2)
 
-            self.gap = layers.Flatten()
-            self.dp = layers.Dropout(0.5)
+            # Dropblock 3D for feature maps
+            self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
+            self.dropblock_flatten = DropBlockFlatten(keep_prob=0.5, block_size=8*8*8)
+
+            self.flatten = layers.Flatten()
+
+            self.dp = layers.Dropout(0.3)
             self.dense1 = layers.Dense(units=1024, activation="relu")
             self.dense2 = layers.Dense(units=128, activation="relu")
             self.classifier = layers.Dense(units=nClass, activation="relu")
@@ -138,8 +143,12 @@ class MRIImaging3DConvModel(tf.keras.Model):
             else:
                 self.pool5 = layers.MaxPool3D(pool_size=2)
 
-            self.gap = layers.Flatten()
-            self.dp = layers.Dropout(0.5)
+            # Dropblock for feature maps, before / after the flatten layer
+            self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
+            self.dropblock_flatten = DropBlockFlatten(keep_prob=0.5, block_size=8 * 8 * 8)
+
+            self.flatten = layers.Flatten()
+            self.dp = layers.Dropout(0.3)
             self.dense1 = layers.Dense(units=1024, activation="relu")
             self.dense2 = layers.Dense(units=128, activation="relu")
             self.classifier = layers.Dense(units=nClass, activation="relu")
@@ -167,7 +176,14 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = self.bn5(x)
         x = tf.nn.relu(x)
         x = self.pool5(x)
-        x = self.gap(x)
+
+        x = self.flatten(x)
+        if training and args.dropBlock3D:
+            x = tf.reshape(x, [x.shape[0], -1, 1])
+            x = self.dropblock_flatten(x)
+
+            x = tf.reshape(x, [x.shape[0], x.shape[1]])
+
         x = self.dp(x)
         x = self.dense1(x)
         x = self.dense2(x)
@@ -200,7 +216,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = tf.nn.relu(x)
 
         x = self.pool5(x)
-        x = self.gap(x)
+        x = self.flatten(x)
         x = self.dp(x)
         x = self.dense1(x)  # the representation with 1024 values
         return x
@@ -372,9 +388,9 @@ def train(args):
         if args.continueEpoch != 0:
             #model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
             model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_48')
-        elif args.dropBlock or args.worst_sample or args.gradientGuidedDropBlock:
+        elif args.dropBlock or args.worst_sample or args.gradientGuidedDropBlock or args.dropBlock3D:
             # dropblock training is too hard, so let's load the previous one to continue as epoch 1
-            model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_2')
+            model.load_weights(WEIGHTS_DIR + 'weights_regular_training/weights_aug_fold_0_seed_1_epoch_50')
 
         for epoch in range(1, args.epochs + 1):
             if epoch <= args.continueEpoch:
@@ -765,14 +781,14 @@ def embedding_extractor(args):
                 info[items[0] + '#' + items[1]] = line
 
         if split == 'train' or split == 'val':
-            np.save('embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
+            np.save(READ_DIR + 'embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
                 args.continueEpoch) + '_' + dataset + '_' + split + '.npy', embedding)
-            f = open('embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
+            f = open(READ_DIR + 'embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
                 args.continueEpoch) + '_' + dataset + '_' + split + '.csv', 'w')
         else:
-            np.save('embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
+            np.save(READ_DIR + 'embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
                 args.continueEpoch) + '_' + dataset + '.npy', embedding)
-            f = open('embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
+            f = open(READ_DIR + 'embeddingResult/result' + getSaveName(args) + '_epoch_' + str(
                 args.continueEpoch) + '_' + dataset + '.csv', 'w')
 
         for i in range(len(subjectIDs)):
@@ -1183,6 +1199,7 @@ if __name__ == "__main__":
                         help='whether we drop half of the information of the images')
     parser.add_argument('-o', '--gradientGuidedDropBlock', type=int, default=0,
                         help='whether we perform gradient guided dropBlock')
+    parser.add_argument('-q', '--dropBlock3D', type=int, default=0, help='whether we perform 3D dropblock on conv layers')
     parser.add_argument('-r', '--worst_sample', type=int, default=0, help='whether we use min max pooling')
     parser.add_argument('-y', '--consistency', type=float, default=0, help='whether we use min max pooling')
     parser.add_argument('-t', '--gpu', type=str, default=0,
