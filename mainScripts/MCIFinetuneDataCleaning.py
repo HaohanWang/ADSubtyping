@@ -57,7 +57,7 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
                 split = np.random.choice(['train', 'val', 'test'], p=[0.8, 0.1, 0.1])
 
                 new_label = 'AD' if mci_subjects_to_new_label[subject] == 1 else 'CN'
-                file.writelines(','.join([subject, session, age, gender, new_label]) + f'{split}\n')
+                file.writelines(','.join([subject, session, age, gender, new_label]) + f',{split}\n')
 
 
 
