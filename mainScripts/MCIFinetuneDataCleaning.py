@@ -1,5 +1,6 @@
 from os.path import join
 from collections import defaultdict
+import numpy as np
 
 # Data pipeline to prepare subjects used for model finetuning with MCI -> AD progression
 
@@ -53,9 +54,11 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
             gender = items[3]
 
             if subject in mci_subjects_to_new_label:
+                split = np.random.choice(['train', 'val', 'test'], p=[0.8, 0.1, 0.1])
 
                 new_label = 'AD' if mci_subjects_to_new_label[subject] == 1 else 'CN'
-                file.writelines(','.join([subject, session, age, gender, new_label, '\n']))
+                file.writelines(','.join([subject, session, age, gender, new_label]) + f'{split}\n')
+
 
 
 
