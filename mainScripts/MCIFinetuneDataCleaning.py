@@ -43,7 +43,7 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
     original_csv_path = join(img_dir, 'split.pretrained.0.csv')
     text = [line.strip() for line in open(original_csv_path)]
 
-    with open('mci_finetune.csv', 'w') as file:
+    with open(READ_DIR + 'ADNI_CAPS/mci_finetune.csv', 'w') as file:
         for line in text[1:]:
             items = line.split(',')
 
@@ -55,7 +55,7 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
             if subject in mci_subjects_to_new_label:
 
                 new_label = 'AD' if mci_subjects_to_new_label[subject] == 1 else 'CN'
-                file.writelines(','.join([subject, session, age, gender, new_label]))
+                file.writelines(','.join([subject, session, age, gender, new_label, '\n']))
 
 
 
