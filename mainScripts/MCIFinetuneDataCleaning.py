@@ -27,13 +27,7 @@ def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
         subjects_to_split[subject].add(split)
         subjects_to_labels[subject].append(csv_label)
 
-        assert len(subjects_to_split[subject]) <= 1  # sanity check to make sure a subject does not
-
-
-        if split == 'test' or split == 'val':
-            # assert "MCI" not in subjects_to_labels[subject], "test or val data should not have MCI"
-            assert len(set(subjects_to_labels[subject])) == 1, "test or val data should have single label"
-        # appear in more than one split
+        assert len(subjects_to_split[subject]) <= 1  # sanity check to make sure a subject does not appear in more than one split
 
 
     for sub, labels in subjects_to_labels.items():
