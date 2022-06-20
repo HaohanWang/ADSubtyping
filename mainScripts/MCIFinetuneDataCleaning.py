@@ -14,7 +14,7 @@ def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
 
     mci_subjects_to_new_label = {}
 
-    csv_path = join(img_dir, f'split.pretrained.{idx_fold}.csv')
+    csv_path = join(img_dir, f'split.stratified.{idx_fold}.csv')
     text = [line.strip() for line in open(csv_path)]
 
     for line in text[1:]:
@@ -31,7 +31,7 @@ def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS', idx_fold=0):
 
 
         if split == 'test' or split == 'val':
-            assert "MCI" not in subjects_to_labels[subject], "test or val data should not have MCI"
+            # assert "MCI" not in subjects_to_labels[subject], "test or val data should not have MCI"
             assert len(set(subjects_to_labels[subject])) == 1, "test or val data should have single label"
         # appear in more than one split
 
