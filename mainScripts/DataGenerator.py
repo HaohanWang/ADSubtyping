@@ -100,7 +100,8 @@ class MRIDataGenerator(keras.utils.Sequence):
                 return images, labels
 
     def parse_csv_file(self):
-        csv_path = join(self.img_dir, f'split.pretrained.{self.idx_fold}.csv')
+        # csv_path = join(self.img_dir, f'split.pretrained.{self.idx_fold}.csv')
+        csv_path = join(self.img_dir, 'mci_finetune.csv')
         text = [line.strip() for line in open(csv_path)]
         self.filePaths_AD = []
         label_AD = []
