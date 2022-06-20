@@ -120,7 +120,7 @@ class MRIDataGenerator(keras.utils.Sequence):
 
         if self.mci_finetune:
             assert not self.MCI_included_as_soft_label, "We should not use MCI as soft label when finetuning with MCI subjects"
-            self.mci_subjects_to_new_label = MCIFinetuneDataCleaning.find_mci_subjects(self.img_dir, self.idx_fold)
+            self.mci_subjects_to_new_label = MCIFinetuneDataCleaning.find_mci_subjects(self.img_dir)
 
         for line in text[1:]:
             items = line.split(',')
