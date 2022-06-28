@@ -204,9 +204,9 @@ if __name__ == '__main__':
     tmp = tmp.drop_duplicates(subset=['participant_id'])
     df_snp = tmp.reset_index(drop=True)
 
-    train_df = pd.read_csv(BASE_DIR + 'drop_block_after_flatten/train_saliency_info.csv')
-    test_df = pd.read_csv(BASE_DIR + 'drop_block_after_flatten/test_saliency_info.csv')
-    val_df = pd.read_csv(BASE_DIR + 'drop_block_after_flatten/val_saliency_info.csv')
+    train_df = pd.read_csv(BASE_DIR + 'mci_saliency/train_saliency_info.csv')
+    test_df = pd.read_csv(BASE_DIR + 'mci_saliency/test_saliency_info.csv')
+    val_df = pd.read_csv(BASE_DIR + 'mci_saliency/val_saliency_info.csv')
     df_pred = pd.concat([train_df, test_df, val_df])
     df_pred = df_pred.reset_index(drop=True)
 
@@ -223,5 +223,5 @@ if __name__ == '__main__':
     for p, l in tqdm(zip(snp_correct_paths, snp_correct_labels)):
         print(p)
         print(l)
-        drawFromPath(p,l, BASE_DIR + 'new_ks_4_th_0.05_zo_0_dropblock')
+        drawFromPath(p,l, BASE_DIR + 'mci_visualization_70_epoch')
 
