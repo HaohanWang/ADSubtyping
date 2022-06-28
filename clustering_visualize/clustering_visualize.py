@@ -30,7 +30,7 @@ def df2path(df, i):
     # return join('/media/haohanwang/Elements/saliency_map_dropblock2', df.split.iloc[i], df.participant_id.iloc[i], df.session_id.iloc[i] + '.npy')
     # return join(BASE_DIR + 'saliency_map_torch', df.split.iloc[i], df.participant_id.iloc[i],
     #             df.session_id.iloc[i] + '.npy')
-    return join(BASE_DIR + 'drop_block_after_flatten', df.split.iloc[i], df.participant_id.iloc[i],
+    return join(BASE_DIR + 'mci_saliency', df.split.iloc[i], df.participant_id.iloc[i],
                 df.session_id.iloc[i] + '.npy')
 
 def path2subsess(path):
