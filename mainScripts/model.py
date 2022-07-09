@@ -1251,3 +1251,5 @@ if __name__ == "__main__":
         attack_visualization(args)
     elif args.action == 6:
         activation_maximization_visualize(args)
+    elif args.action == 7:
+        get_model_info(args)
