@@ -1171,6 +1171,14 @@ def main(args):
     train(args)
 
 
+def get_model_info(args):
+    num_classes = 2
+    model = MRIImaging3DConvModel(nClass=num_classes, args=args)
+    model.load_weights(
+        WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+
+    print(model.summary())
+
 def init_gpu(gpu_index, force=False):
     if isinstance(gpu_index, list):
         gpu_num = ','.join([str(i) for i in gpu_index])

@@ -62,5 +62,5 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
 
 
 
-generate_mci_csv()
+# generate_mci_csv()
 
