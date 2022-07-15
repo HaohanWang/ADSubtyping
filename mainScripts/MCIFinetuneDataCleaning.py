@@ -52,11 +52,13 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
             session = items[1]
             age = items[2]
             gender = items[3]
+            original_label = items[4]
 
-            if subject in mci_subjects_to_new_label:
+            if subject in mci_subjects_to_new_label and original_label != 'AD':
                 split = np.random.choice(['train', 'val', 'test'], p=[0.8, 0.1, 0.1])
 
-                new_label = 'AD' if mci_subjects_to_new_label[subject] == 1 else 'CN'
+                if split == "train":
+                    new_label = 'AD' if mci_subjects_to_new_label[subject] == 1 else 'CN'
                 file.writelines(','.join([subject, session, age, gender, new_label]) + f',{split}\n')
 
 
