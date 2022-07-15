@@ -100,7 +100,7 @@ class MRIDataGenerator(keras.utils.Sequence):
 
     def parse_csv_file(self):
         if self.mci_finetune:
-            csv_path = join(self.img_dir, 'mci_finetune.csv')
+            csv_path = join(self.img_dir, 'mci_finetune_clean.csv')
         else:
             csv_path = join(self.img_dir, f'split.pretrained.{self.idx_fold}.csv')
 
