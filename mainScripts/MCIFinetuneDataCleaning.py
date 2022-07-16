@@ -44,7 +44,7 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
     original_csv_path = join(img_dir, 'split.pretrained.0.csv')
     text = [line.strip() for line in open(original_csv_path)]
 
-    with open(READ_DIR + 'ADNI_CAPS/mci_finetune.csv', 'w') as file:
+    with open(READ_DIR + 'ADNI_CAPS/mci_finetune_clean.csv', 'w') as file:
         for line in text[1:]:
             items = line.split(',')
 
