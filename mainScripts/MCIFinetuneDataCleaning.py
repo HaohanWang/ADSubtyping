@@ -54,7 +54,7 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
             gender = items[3]
             original_label = items[4]
 
-            if subject in mci_subjects_to_new_label and original_label != 'AD':
+            if subject in mci_subjects_to_new_label and original_label == 'MCI':
                 split = np.random.choice(['train', 'val', 'test'], p=[0.8, 0.1, 0.1])
 
                 if split == "train":
