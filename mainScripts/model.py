@@ -252,10 +252,10 @@ def getSaveName(args):
         saveName = saveName + '_aug'
         if args.augmented_fancy:
             saveName = saveName + '_fancy'
-    # if args.mci:
-    #     saveName = saveName + '_mci'
-    #     if args.mci_balanced:
-    #         saveName = saveName + '_balanced'
+    if args.mci:
+        saveName = saveName + '_mci'
+        if args.mci_balanced:
+            saveName = saveName + '_balanced'
     if args.pgd != 0:
         saveName = saveName + '_pgd_' + str(args.pgd)
     if args.minmax:
@@ -395,8 +395,8 @@ def train(args):
         total_step_test = math.ceil(len(testData) / args.batch_size)
 
         if args.continueEpoch != 0:
-            model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
-            # model.load_weights(WEIGHTS_DIR + 'weights_batch_32/weights_aug_fold_0_seed_1_epoch_48')
+            # model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+            model.load_weights(WEIGHTS_DIR + 'weights_regular_training/weights_aug_fold_0_seed_1_epoch_1')
         elif args.dropBlock or args.worst_sample or args.gradientGuidedDropBlock or args.dropBlock3D:
             # dropblock training is too hard, so let's load the previous one to continue as epoch 1
             model.load_weights(WEIGHTS_DIR + 'weights_regular_training/weights_aug_fold_0_seed_1_epoch_50')
