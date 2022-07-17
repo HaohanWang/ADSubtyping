@@ -107,35 +107,38 @@ class MRIImaging3DConvModel(tf.keras.Model):
         #     self.dense1 = layers.Dense(units=1024, activation="relu")
         #     self.dense2 = layers.Dense(units=128, activation="relu")
         #     self.classifier = layers.Dense(units=nClass, activation="relu")
-        self.conv1 = layers.Conv3D(filters=8, kernel_size=3, input_shape=(169, 208, 179))
+
+        initializer = tf.keras.initializers.HeNormal()
+
+        self.conv1 = layers.Conv3D(filters=8, kernel_size=3, input_shape=(169, 208, 179), kernel_initializer=initializer)
         self.bn1 = layers.BatchNormalization()
         if args.minmax:
             self.pool1 = minMaxPool(pool_size=2)
         else:
             self.pool1 = layers.MaxPool3D(pool_size=2)
 
-        self.conv2 = layers.Conv3D(filters=16, kernel_size=3)
+        self.conv2 = layers.Conv3D(filters=16, kernel_size=3, kernel_initializer=initializer)
         self.bn2 = layers.BatchNormalization()
         if args.minmax:
             self.pool2 = minMaxPool(pool_size=2)
         else:
             self.pool2 = layers.MaxPool3D(pool_size=2)
 
-        self.conv3 = layers.Conv3D(filters=32, kernel_size=3)
+        self.conv3 = layers.Conv3D(filters=32, kernel_size=3, kernel_initializer=initializer)
         self.bn3 = layers.BatchNormalization()
         if args.minmax:
             self.pool3 = minMaxPool(pool_size=2)
         else:
             self.pool3 = layers.MaxPool3D(pool_size=2)
 
-        self.conv4 = layers.Conv3D(filters=64, kernel_size=3)
+        self.conv4 = layers.Conv3D(filters=64, kernel_size=3, kernel_initializer=initializer)
         self.bn4 = layers.BatchNormalization()
         if args.minmax:
             self.pool4 = minMaxPool(pool_size=2)
         else:
             self.pool4 = layers.MaxPool3D(pool_size=2)
 
-        self.conv5 = layers.Conv3D(filters=128, kernel_size=3)
+        self.conv5 = layers.Conv3D(filters=128, kernel_size=3, kernel_initializer=initializer)
         self.bn5 = layers.BatchNormalization()
         if args.minmax:
             self.pool5 = minMaxPool(pool_size=2)
@@ -379,7 +382,7 @@ def train(args):
         @tf.function
         def distributed_train_step(dataset_inputs, data_labels):
             per_replica_losses, logits = strategy.run(train_step, args=(dataset_inputs, data_labels))
-            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None), strategy.reduce(tf.distribute.ReduceOp.SUM, logits, axis=None), logits
+            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None), strategy.reduce(tf.distribute.ReduceOp.SUM, logits, axis=None)
 
         @tf.function
         def distributed_train_step_consistency(dataset_inputs_1, dataset_inputs_2, data_labels):
