@@ -382,7 +382,7 @@ def train(args):
         @tf.function
         def distributed_train_step(dataset_inputs, data_labels):
             per_replica_losses = strategy.run(train_step, args=(dataset_inputs, data_labels))
-            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None), strategy.reduce(tf.distribute.ReduceOp.SUM, axis=None)
+            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None)
 
         @tf.function
         def distributed_train_step_consistency(dataset_inputs_1, dataset_inputs_2, data_labels):
