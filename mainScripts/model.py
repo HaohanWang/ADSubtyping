@@ -55,105 +55,104 @@ class MRIImaging3DConvModel(tf.keras.Model):
     def __init__(self, nClass, args):
         super(MRIImaging3DConvModel, self).__init__()
 
-        if args.continueEpoch == 0 and args.dropBlock == 0 and args.gradientGuidedDropBlock == 0 and args.dropBlock3D == 0:
-            self.weights_folder = '../pretrainModels/best_model/fold_' + str(args.idx_fold) + '/npy_weights/'
-            self.conv1 = layers.Conv3D(filters=8, kernel_size=3,
-                                       weights=self.setConvWeights(0))
-            self.bn1 = layers.BatchNormalization(weights=self.setBatchNormWeights(1))
-            if args.minmax:
-                self.pool1 = minMaxPool(pool_size=2)
-            else:
-                self.pool1 = layers.MaxPool3D(pool_size=2)
-
-            self.conv2 = layers.Conv3D(filters=16, kernel_size=3,
-                                       weights=self.setConvWeights(4))
-            self.bn2 = layers.BatchNormalization(weights=self.setBatchNormWeights(5))
-            if args.minmax:
-                self.pool2 = minMaxPool(pool_size=2)
-            else:
-                self.pool2 = layers.MaxPool3D(pool_size=2)
-
-            self.conv3 = layers.Conv3D(filters=32, kernel_size=3,
-                                       weights=self.setConvWeights(8))
-            self.bn3 = layers.BatchNormalization(weights=self.setBatchNormWeights(9))
-            if args.minmax:
-                self.pool3 = minMaxPool(pool_size=2)
-            else:
-                self.pool3 = layers.MaxPool3D(pool_size=2)
-
-            self.conv4 = layers.Conv3D(filters=64, kernel_size=3,
-                                       weights=self.setConvWeights(12))
-            self.bn4 = layers.BatchNormalization(weights=self.setBatchNormWeights(13))
-            if args.minmax:
-                self.pool4 = minMaxPool(pool_size=2)
-            else:
-                self.pool4 = layers.MaxPool3D(pool_size=2)
-
-            self.conv5 = layers.Conv3D(filters=128, kernel_size=3,
-                                       weights=self.setConvWeights(16))
-            self.bn5 = layers.BatchNormalization(weights=self.setBatchNormWeights(17))
-            if args.minmax:
-                self.pool5 = minMaxPool(pool_size=2)
-            else:
-                self.pool5 = layers.MaxPool3D(pool_size=2)
-
-            # Dropblock 3D for feature maps
-            self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
-            self.dropblock_flatten = DropBlockFlatten(keep_prob=0.5, block_size=8*8*8)
-
-            self.flatten = layers.Flatten()
-
-            self.dp = layers.Dropout(0.3)
-            self.dense1 = layers.Dense(units=1024, activation="relu")
-            self.dense2 = layers.Dense(units=128, activation="relu")
-            self.classifier = layers.Dense(units=nClass, activation="relu")
+        # if args.continueEpoch == 0 and args.dropBlock == 0 and args.gradientGuidedDropBlock == 0 and args.dropBlock3D == 0:
+        #     self.weights_folder = '../pretrainModels/best_model/fold_' + str(args.idx_fold) + '/npy_weights/'
+        #     self.conv1 = layers.Conv3D(filters=8, kernel_size=3,
+        #                                weights=self.setConvWeights(0))
+        #     self.bn1 = layers.BatchNormalization(weights=self.setBatchNormWeights(1))
+        #     if args.minmax:
+        #         self.pool1 = minMaxPool(pool_size=2)
+        #     else:
+        #         self.pool1 = layers.MaxPool3D(pool_size=2)
+        #
+        #     self.conv2 = layers.Conv3D(filters=16, kernel_size=3,
+        #                                weights=self.setConvWeights(4))
+        #     self.bn2 = layers.BatchNormalization(weights=self.setBatchNormWeights(5))
+        #     if args.minmax:
+        #         self.pool2 = minMaxPool(pool_size=2)
+        #     else:
+        #         self.pool2 = layers.MaxPool3D(pool_size=2)
+        #
+        #     self.conv3 = layers.Conv3D(filters=32, kernel_size=3,
+        #                                weights=self.setConvWeights(8))
+        #     self.bn3 = layers.BatchNormalization(weights=self.setBatchNormWeights(9))
+        #     if args.minmax:
+        #         self.pool3 = minMaxPool(pool_size=2)
+        #     else:
+        #         self.pool3 = layers.MaxPool3D(pool_size=2)
+        #
+        #     self.conv4 = layers.Conv3D(filters=64, kernel_size=3,
+        #                                weights=self.setConvWeights(12))
+        #     self.bn4 = layers.BatchNormalization(weights=self.setBatchNormWeights(13))
+        #     if args.minmax:
+        #         self.pool4 = minMaxPool(pool_size=2)
+        #     else:
+        #         self.pool4 = layers.MaxPool3D(pool_size=2)
+        #
+        #     self.conv5 = layers.Conv3D(filters=128, kernel_size=3,
+        #                                weights=self.setConvWeights(16))
+        #     self.bn5 = layers.BatchNormalization(weights=self.setBatchNormWeights(17))
+        #     if args.minmax:
+        #         self.pool5 = minMaxPool(pool_size=2)
+        #     else:
+        #         self.pool5 = layers.MaxPool3D(pool_size=2)
+        #
+        #     # Dropblock 3D for feature maps
+        #     self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
+        #     self.dropblock_flatten = DropBlockFlatten(keep_prob=0.5, block_size=8*8*8)
+        #
+        #     self.flatten = layers.Flatten()
+        #
+        #     self.dp = layers.Dropout(0.3)
+        #     self.dense1 = layers.Dense(units=1024, activation="relu")
+        #     self.dense2 = layers.Dense(units=128, activation="relu")
+        #     self.classifier = layers.Dense(units=nClass, activation="relu")
+        self.conv1 = layers.Conv3D(filters=8, kernel_size=3, input_shape=(169, 208, 179))
+        self.bn1 = layers.BatchNormalization()
+        if args.minmax:
+            self.pool1 = minMaxPool(pool_size=2)
         else:
-            self.conv1 = layers.Conv3D(filters=8, kernel_size=3, input_shape=(169, 208, 179))
-            self.bn1 = layers.BatchNormalization()
-            if args.minmax:
-                self.pool1 = minMaxPool(pool_size=2)
-            else:
-                self.pool1 = layers.MaxPool3D(pool_size=2)
+            self.pool1 = layers.MaxPool3D(pool_size=2)
 
-            self.conv2 = layers.Conv3D(filters=16, kernel_size=3)
-            self.bn2 = layers.BatchNormalization()
-            if args.minmax:
-                self.pool2 = minMaxPool(pool_size=2)
-            else:
-                self.pool2 = layers.MaxPool3D(pool_size=2)
+        self.conv2 = layers.Conv3D(filters=16, kernel_size=3)
+        self.bn2 = layers.BatchNormalization()
+        if args.minmax:
+            self.pool2 = minMaxPool(pool_size=2)
+        else:
+            self.pool2 = layers.MaxPool3D(pool_size=2)
 
-            self.conv3 = layers.Conv3D(filters=32, kernel_size=3)
-            self.bn3 = layers.BatchNormalization()
-            if args.minmax:
-                self.pool3 = minMaxPool(pool_size=2)
-            else:
-                self.pool3 = layers.MaxPool3D(pool_size=2)
+        self.conv3 = layers.Conv3D(filters=32, kernel_size=3)
+        self.bn3 = layers.BatchNormalization()
+        if args.minmax:
+            self.pool3 = minMaxPool(pool_size=2)
+        else:
+            self.pool3 = layers.MaxPool3D(pool_size=2)
 
-            self.conv4 = layers.Conv3D(filters=64, kernel_size=3)
-            self.bn4 = layers.BatchNormalization()
-            if args.minmax:
-                self.pool4 = minMaxPool(pool_size=2)
-            else:
-                self.pool4 = layers.MaxPool3D(pool_size=2)
+        self.conv4 = layers.Conv3D(filters=64, kernel_size=3)
+        self.bn4 = layers.BatchNormalization()
+        if args.minmax:
+            self.pool4 = minMaxPool(pool_size=2)
+        else:
+            self.pool4 = layers.MaxPool3D(pool_size=2)
 
-            self.conv5 = layers.Conv3D(filters=128, kernel_size=3)
-            self.bn5 = layers.BatchNormalization()
-            if args.minmax:
-                self.pool5 = minMaxPool(pool_size=2)
-            else:
-                self.pool5 = layers.MaxPool3D(pool_size=2)
+        self.conv5 = layers.Conv3D(filters=128, kernel_size=3)
+        self.bn5 = layers.BatchNormalization()
+        if args.minmax:
+            self.pool5 = minMaxPool(pool_size=2)
+        else:
+            self.pool5 = layers.MaxPool3D(pool_size=2)
 
-            # Dropblock for feature maps, before / after the flatten layer
-            self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
-            self.dropblock_flatten = DropBlockFlatten(keep_prob=0.5, block_size=8 * 8 * 8)
+        # Dropblock for feature maps, before / after the flatten layer
+        self.dropblock = DropBlock3D(keep_prob=0.5, block_size=3)
+        self.dropblock_flatten = DropBlockFlatten(keep_prob=0.5, block_size=8 * 8 * 8)
 
-            self.flatten = layers.Flatten()
-            self.dp = layers.Dropout(0.3)
-            self.dense1 = layers.Dense(units=1024, activation="relu")
-            self.dense2 = layers.Dense(units=128, activation="relu")
-            self.classifier = layers.Dense(units=nClass, activation="relu")
+        self.flatten = layers.Flatten()
+        self.dp = layers.Dropout(0.5)
+        self.dense1 = layers.Dense(units=1024, activation="relu")
+        self.dense2 = layers.Dense(units=128, activation="relu")
+        self.classifier = layers.Dense(units=nClass, activation="relu")
 
-            self.data_aug = MRIDataAugmentation((169, 208, 179), 0.5)
+        self.data_aug = MRIDataAugmentation((169, 208, 179), 0.5)
 
     def call(self, inputs, training=None, mask=None):
         x = self.conv1(inputs)
@@ -395,8 +394,8 @@ def train(args):
         total_step_test = math.ceil(len(testData) / args.batch_size)
 
         if args.continueEpoch != 0:
-            # model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
-            model.load_weights(WEIGHTS_DIR + 'weights_regular_training/weights_aug_fold_0_seed_1_epoch_1')
+            model.load_weights(WEIGHTS_DIR + args.weights_folder + '/weights' + getSaveName(args) + '_epoch_' + str(args.continueEpoch))
+            # model.load_weights(WEIGHTS_DIR + 'weights_regular_training/weights_aug_fold_0_seed_1_epoch_1')
         elif args.dropBlock or args.worst_sample or args.gradientGuidedDropBlock or args.dropBlock3D:
             # dropblock training is too hard, so let's load the previous one to continue as epoch 1
             model.load_weights(WEIGHTS_DIR + 'weights_regular_training/weights_aug_fold_0_seed_1_epoch_50')
