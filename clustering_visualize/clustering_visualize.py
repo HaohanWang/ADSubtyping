@@ -198,7 +198,7 @@ if __name__ == '__main__':
     snp_subs = np.loadtxt(BASE_DIR + 'SNP/samples.txt', dtype=str)
     snp_subs = np.array(list(map(sub2adni, snp_subs)))
 
-    df = pd.read_csv(BASE_DIR +'ADNI_CAPS/mci_finetune.csv')
+    df = pd.read_csv(BASE_DIR +'ADNI_CAPS/mci_finetune_clean.csv')
     tmp = df[df['participant_id'].isin(snp_subs)]
     tmp = tmp.sort_values(by=['session_id'], ascending=False)
     tmp = tmp.drop_duplicates(subset=['participant_id'])

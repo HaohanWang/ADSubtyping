@@ -354,7 +354,7 @@ def train(args):
             opt.apply_gradients(zip(grads, model.trainable_weights))
 
             train_acc_metric.update_state(y, logits)
-            return loss_value
+            return loss_value, logits
 
         def train_step_consistency(x, z, y):
             with tf.GradientTape() as tape:
@@ -378,7 +378,9 @@ def train(args):
 
         @tf.function
         def distributed_train_step(dataset_inputs, data_labels):
-            per_replica_losses = strategy.run(train_step, args=(dataset_inputs, data_labels))
+            per_replica_losses, logits = strategy.run(train_step, args=(dataset_inputs, data_labels))
+            print('logits = ')
+            print(logits)
             return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None)
         @tf.function
         def distributed_train_step_consistency(dataset_inputs_1, dataset_inputs_2, data_labels):
