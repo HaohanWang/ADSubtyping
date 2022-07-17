@@ -381,8 +381,8 @@ def train(args):
 
         @tf.function
         def distributed_train_step(dataset_inputs, data_labels):
-            per_replica_losses, logits = strategy.run(train_step, args=(dataset_inputs, data_labels))
-            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None), strategy.reduce(tf.distribute.ReduceOp.SUM, logits, axis=None)
+            per_replica_losses = strategy.run(train_step, args=(dataset_inputs, data_labels))
+            return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None), strategy.reduce(tf.distribute.ReduceOp.SUM, axis=None)
 
         @tf.function
         def distributed_train_step_consistency(dataset_inputs_1, dataset_inputs_2, data_labels):
@@ -458,13 +458,12 @@ def train(args):
                     trainData.dropBlock_iterationCount += 1
 
                 if args.consistency == 0:
-                    loss_value, logits = distributed_train_step(images, labels)
+                    loss_value = distributed_train_step(images, labels)
                 else:
                     loss_value = distributed_train_step_consistency(images, images2, labels)
                     # todo: what will the corresponding one on consistency loss looks like
 
                 train_acc = train_acc_metric.result()
-                print("Logits = %.4f" %float(logits))
                 print("Training loss %.4f at step %d/%d at Epoch %d with current accuracy %.4f" % (
                     float(loss_value), int(i + 1), total_step_train, epoch, train_acc), end='\r')
 
