@@ -357,7 +357,7 @@ def train(args):
             opt.apply_gradients(zip(grads, model.trainable_weights))
 
             train_acc_metric.update_state(y, logits)
-            return loss_value, logits
+            return loss_value
 
         def train_step_consistency(x, z, y):
             with tf.GradientTape() as tape:
