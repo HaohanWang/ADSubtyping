@@ -378,6 +378,7 @@ def train(args):
 
         def test_step(x, y):
             val_logits = model(x, training=False)
+            print(val_logits)
             val_acc_metric.update_state(y, val_logits)
 
         @tf.function
