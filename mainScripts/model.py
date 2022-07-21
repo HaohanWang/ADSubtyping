@@ -32,8 +32,8 @@ if psutil.Process().username() == 'haohanwang':
     READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
     WEIGHTS_DIR = 'weights/'
 else:
-    READ_DIR = '/home/ec2-user/mnt/home/ec2-user/alzstudy/AlzheimerData/'
-    WEIGHTS_DIR = '/home/ec2-user/mnt/home/ec2-user/alzstudy/weights/'
+    READ_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/AlzheimerData'
+    WEIGHTS_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/weights/'
 
 
 class minMaxPool(tf.keras.layers.Layer):
@@ -333,8 +333,8 @@ def train(args):
 
     with strategy.scope():
         model = MRIImaging3DConvModel(nClass=num_classes, args=args)
-        # opt = optimizers.Adam(learning_rate=5e-6)
-        opt = optimizers.Adam(learning_rate=1e-5)
+        opt = optimizers.Adam(learning_rate=5e-6)
+        # opt = optimizers.Adam(learning_rate=1e-5)
         loss_fn = losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
 
         def compute_loss(labels, predictions):
@@ -378,7 +378,6 @@ def train(args):
 
         def test_step(x, y):
             val_logits = model(x, training=False)
-            print(val_logits)
             val_acc_metric.update_state(y, val_logits)
 
         @tf.function
@@ -411,71 +410,71 @@ def train(args):
                 continue
 
             start_time = time.time()
-            # for i in range(total_step_train):
-            #     images, labels = trainData[i]
-            #
-            #     if args.worst_sample != 0:
-            #         losses_total = np.zeros(args.worst_sample*args.batch_size)
-            #         for k in range(args.worst_sample):
-            #             xtmp = images[k*args.batch_size:(k+1)*args.batch_size]
-            #             ytmp = labels[k*args.batch_size:(k+1)*args.batch_size]
-            #
-            #             loss_batch = calculate_loss(xtmp, ytmp)
-            #             losses_total[k*args.batch_size:(k+1)*args.batch_size] = loss_batch
-            #
-            #         idc1 = np.argsort(-losses_total)[:int(args.batch_size/2)]
-            #         idc2 = np.random.choice(range(args.batch_size*args.worst_sample), int(args.batch_size/2), replace=False)
-            #         idx = np.append(idc1, idc2)
-            #         images = images[idx]
-            #         labels = labels[idx]
-            #
-            #     if args.pgd != 0:
-            #         # todo: what's the visual difference between an AD and a normal (what are the differences we need)
-            #
-            #         if args.consistency == 0:
-            #             images += (np.random.random(size=images.shape) * 2 - 1) * args.pgd
-            #             for pgd_index in range(5):
-            #                 grad = model.calculateGradients(images, labels)
-            #                 images += (args.pgd / 5) * np.sign(grad)
-            #
-            #                 images = np.clip(images,
-            #                                  images - args.pgd,
-            #                                  images + args.pgd)
-            #                 images = np.clip(images, 0, 1)  # ensure valid pixel range
-            #         else:
-            #             images2 = images + (np.random.random(size=images.shape) * 2 - 1) * args.pgd
-            #             for pgd_index in range(5):
-            #                 grad = model.calculateGradients(images2, labels)
-            #                 images2 += (args.pgd / 5) * np.sign(grad)
-            #
-            #                 images2 = np.clip(images2,
-            #                                  images2 - args.pgd,
-            #                                  images2 + args.pgd)
-            #                 images2 = np.clip(images2, 0, 1)  # ensure valid pixel range
-            #
-            #     if args.gradientGuidedDropBlock:
-            #         grads = model.calculateGradients(images, labels)
-            #         # perform dropblock per sample based on gradients - mutating the training images
-            #         images = model.data_aug.augmentData_batch_erasing_grad_guided(images, trainData.dropBlock_iterationCount, grads)
-            #         trainData.dropBlock_iterationCount += 1
-            #
-            #     if args.consistency == 0:
-            #         loss_value = distributed_train_step(images, labels)
-            #     else:
-            #         loss_value = distributed_train_step_consistency(images, images2, labels)
-            #         # todo: what will the corresponding one on consistency loss looks like
-            #
-            #     train_acc = train_acc_metric.result()
-            #     print("Training loss %.4f at step %d/%d at Epoch %d with current accuracy %.4f" % (
-            #         float(loss_value), int(i + 1), total_step_train, epoch, train_acc), end='\r')
+            for i in range(total_step_train):
+                images, labels = trainData[i]
 
-            # train_acc = train_acc_metric.result()
-            # print(
-            #     "\n\tEpoch %d, Training loss %.4f and acc over epoch: %.4f" % (epoch, float(loss_value), float(train_acc)),
-                # end='\t')
+                if args.worst_sample != 0:
+                    losses_total = np.zeros(args.worst_sample*args.batch_size)
+                    for k in range(args.worst_sample):
+                        xtmp = images[k*args.batch_size:(k+1)*args.batch_size]
+                        ytmp = labels[k*args.batch_size:(k+1)*args.batch_size]
 
-            # train_acc_metric.reset_states()
-            # print("with: %.2f seconds" % (time.time() - start_time), end='\t')
+                        loss_batch = calculate_loss(xtmp, ytmp)
+                        losses_total[k*args.batch_size:(k+1)*args.batch_size] = loss_batch
+
+                    idc1 = np.argsort(-losses_total)[:int(args.batch_size/2)]
+                    idc2 = np.random.choice(range(args.batch_size*args.worst_sample), int(args.batch_size/2), replace=False)
+                    idx = np.append(idc1, idc2)
+                    images = images[idx]
+                    labels = labels[idx]
+
+                if args.pgd != 0:
+                    # todo: what's the visual difference between an AD and a normal (what are the differences we need)
+
+                    if args.consistency == 0:
+                        images += (np.random.random(size=images.shape) * 2 - 1) * args.pgd
+                        for pgd_index in range(5):
+                            grad = model.calculateGradients(images, labels)
+                            images += (args.pgd / 5) * np.sign(grad)
+
+                            images = np.clip(images,
+                                             images - args.pgd,
+                                             images + args.pgd)
+                            images = np.clip(images, 0, 1)  # ensure valid pixel range
+                    else:
+                        images2 = images + (np.random.random(size=images.shape) * 2 - 1) * args.pgd
+                        for pgd_index in range(5):
+                            grad = model.calculateGradients(images2, labels)
+                            images2 += (args.pgd / 5) * np.sign(grad)
+
+                            images2 = np.clip(images2,
+                                             images2 - args.pgd,
+                                             images2 + args.pgd)
+                            images2 = np.clip(images2, 0, 1)  # ensure valid pixel range
+
+                if args.gradientGuidedDropBlock:
+                    grads = model.calculateGradients(images, labels)
+                    # perform dropblock per sample based on gradients - mutating the training images
+                    images = model.data_aug.augmentData_batch_erasing_grad_guided(images, trainData.dropBlock_iterationCount, grads)
+                    trainData.dropBlock_iterationCount += 1
+
+                if args.consistency == 0:
+                    loss_value = distributed_train_step(images, labels)
+                else:
+                    loss_value = distributed_train_step_consistency(images, images2, labels)
+                    # todo: what will the corresponding one on consistency loss looks like
+
+                train_acc = train_acc_metric.result()
+                print("Training loss %.4f at step %d/%d at Epoch %d with current accuracy %.4f" % (
+                    float(loss_value), int(i + 1), total_step_train, epoch, train_acc), end='\r')
+
+            train_acc = train_acc_metric.result()
+            print(
+                "\n\tEpoch %d, Training loss %.4f and acc over epoch: %.4f" % (epoch, float(loss_value), float(train_acc)),
+                end='\t')
+
+            train_acc_metric.reset_states()
+            print("with: %.2f seconds" % (time.time() - start_time), end='\t')
 
             for i in range(total_step_val):
                 images, labels = validationData[i]
