@@ -32,8 +32,10 @@ if psutil.Process().username() == 'haohanwang':
     READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
     WEIGHTS_DIR = 'weights/'
 else:
-    READ_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/AlzheimerData/'
-    WEIGHTS_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/weights/'
+    # READ_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/AlzheimerData/'
+    READ_DIR = '/mnt/home/ec2-user/alzstudy/AlzheimerData/'
+    # WEIGHTS_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/weights/'
+    WEIGHTS_DIR = '/mnt/home/ec2-user/alzstudy/weights/'
 
 
 class minMaxPool(tf.keras.layers.Layer):

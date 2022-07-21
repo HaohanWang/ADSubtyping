@@ -4,8 +4,8 @@ import numpy as np
 
 # Data pipeline to prepare subjects used for model finetuning with MCI -> AD progression
 
-READ_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/AlzheimerData/'
-
+# READ_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/AlzheimerData'
+READ_DIR = '/mnt/home/ec2-user/alzstudy/AlzheimerData/'
 # return the list of subjects that satisfy our criteria for finetuning
 def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS'):
     subjects_to_labels = defaultdict(list)  # subject: [label]
@@ -43,6 +43,8 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
     original_csv_path = join(img_dir, 'split.pretrained.0.csv')
     text = [line.strip() for line in open(original_csv_path)]
 
+
+    balanced_mci = {'CN':0, 'AD':0}
     with open(READ_DIR + 'ADNI_CAPS/mci_finetune_clean.csv', 'w') as file:
         for line in text[1:]:
             items = line.split(',')
@@ -57,6 +59,10 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
                 split = np.random.choice(['train', 'val', 'test'], p=[0.8, 0.1, 0.1])
 
                 new_label = 'AD' if mci_subjects_to_new_label[subject] == 1 else 'CN'
-                file.writelines(','.join([subject, session, age, gender, new_label]) + f',{split}\n')
+
+                if new_label == 'CN' and balanced_mci['AD'] >= balanced_mci['CN']:
+                    balanced_mci[new_label] += 1
+                    file.writelines(','.join([subject, session, age, gender, new_label]) + f',{split}\n')
+
 
 generate_mci_csv()
