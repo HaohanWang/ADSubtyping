@@ -60,7 +60,7 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
 
                 new_label = 'AD' if mci_subjects_to_new_label[subject] == 1 else 'CN'
 
-                if new_label == 'CN' and balanced_mci['AD'] >= balanced_mci['CN']:
+                if split != 'train' or new_label == 'CN' and balanced_mci['AD'] >= balanced_mci['CN']:
                     balanced_mci[new_label] += 1
                     file.writelines(','.join([subject, session, age, gender, new_label]) + f',{split}\n')
 
