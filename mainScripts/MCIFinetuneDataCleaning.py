@@ -75,7 +75,7 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
             label = items[4]
             split = items[5]
 
-            if split == 'train' and label == 'CN' and CN_rm < 200:
+            if split == 'train' and label == 'CN' and CN_rm < 270:
                 CN_rm += 1
             else:
                 file.writelines(','.join([subject, session, age, gender, label]) + f',{split}\n')
