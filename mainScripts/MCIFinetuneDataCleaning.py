@@ -44,7 +44,6 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
     text = [line.strip() for line in open(original_csv_path)]
 
 
-    balanced_mci = {'CN':0, 'AD':0}
     with open(READ_DIR + 'ADNI_CAPS/mci_finetune_clean.csv', 'w') as file:
         for line in text[1:]:
             items = line.split(',')
@@ -60,11 +59,26 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
 
                 new_label = 'AD' if mci_subjects_to_new_label[subject] == 1 else 'CN'
 
-                if split != 'train':
-                    file.writelines(','.join([subject, session, age, gender, new_label]) + f',{split}\n')
-                elif balanced_mci['AD'] >= balanced_mci['CN']:
-                    balanced_mci[new_label] += 1
-                    file.writelines(','.join([subject, session, age, gender, new_label]) + f',{split}\n')
+                file.writelines(','.join([subject, session, age, gender, new_label]) + f',{split}\n')
+
+    new_csv_path = READ_DIR + 'ADNI_CAPS/mci_finetune_clean.csv'
+    text = [line.strip() for line in open(new_csv_path)]
+
+    CN_rm = 0
+    with open(READ_DIR + 'ADNI_CAPS/mci_finetune_clean.csv', 'w') as file:
+        for line in text:
+            subject = items[0]
+            session = items[1]
+            age = items[2]
+            gender = items[3]
+            label = items[4]
+            split = items[5]
+
+            if split == 'train' and label == 'CN' and CN_rm < 200:
+                CN_rm += 1
+            else:
+                file.writelines(','.join([subject, session, age, gender, label]) + f',{split}\n')
+
 
 
 generate_mci_csv()
