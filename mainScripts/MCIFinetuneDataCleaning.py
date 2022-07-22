@@ -67,6 +67,7 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
     CN_rm = 0
     with open(READ_DIR + 'ADNI_CAPS/mci_finetune_clean.csv', 'w') as file:
         for line in text:
+            items = line.split(',')
             subject = items[0]
             session = items[1]
             age = items[2]
