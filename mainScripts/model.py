@@ -335,8 +335,8 @@ def train(args):
 
     with strategy.scope():
         model = MRIImaging3DConvModel(nClass=num_classes, args=args)
-        opt = optimizers.Adam(learning_rate=5e-6)
-        # opt = optimizers.Adam(learning_rate=1e-5)
+        # opt = optimizers.Adam(learning_rate=5e-6)
+        opt = optimizers.Adam(learning_rate=1e-5)
         loss_fn = losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
 
         def compute_loss(labels, predictions):
