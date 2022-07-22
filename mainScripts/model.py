@@ -32,10 +32,10 @@ if psutil.Process().username() == 'haohanwang':
     READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
     WEIGHTS_DIR = 'weights/'
 else:
-    READ_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/AlzheimerData/'
-    # READ_DIR = '/mnt/home/ec2-user/alzstudy/AlzheimerData/'
-    WEIGHTS_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/weights/'
-    # WEIGHTS_DIR = '/mnt/home/ec2-user/alzstudy/weights/'
+    # READ_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/AlzheimerData/'
+    READ_DIR = '/mnt/home/ec2-user/alzstudy/AlzheimerData/'
+    # WEIGHTS_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/weights/'
+    WEIGHTS_DIR = '/mnt/home/ec2-user/alzstudy/weights/'
 
 
 class minMaxPool(tf.keras.layers.Layer):
@@ -172,10 +172,23 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = self.bn3(x)
         x = tf.nn.relu(x)
         x = self.pool3(x)
+
+        x = self.conv4(x)
+        x = self.bn4(x)
+        x = tf.nn.relu(x)
+
+
+        x = self.conv4(x)
+        x = self.bn4(x)
+        x = tf.nn.relu(x)
+
+
         x = self.conv4(x)
         x = self.bn4(x)
         x = tf.nn.relu(x)
         x = self.pool4(x)
+
+
         x = self.conv5(x)
         x = self.bn5(x)
         x = tf.nn.relu(x)
@@ -336,7 +349,7 @@ def train(args):
     with strategy.scope():
         model = MRIImaging3DConvModel(nClass=num_classes, args=args)
         # opt = optimizers.Adam(learning_rate=5e-6)
-        opt = optimizers.Adam(learning_rate=1e-5)
+        opt = optimizers.Adam(learning_rate=5e-6)
         loss_fn = losses.CategoricalCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
 
         def compute_loss(labels, predictions):
@@ -356,10 +369,6 @@ def train(args):
             with tf.GradientTape() as tape:
                 logits = model(x, training=True)
                 loss_value = compute_loss(y, logits)
-                tf.print("lables = ")
-                tf.print(y)
-                tf.print("predicted logits = ")
-                tf.print(logits)
             grads = tape.gradient(loss_value, model.trainable_weights)
             opt.apply_gradients(zip(grads, model.trainable_weights))
 

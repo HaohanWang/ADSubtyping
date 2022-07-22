@@ -4,8 +4,8 @@ import numpy as np
 
 # Data pipeline to prepare subjects used for model finetuning with MCI -> AD progression
 
-READ_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/AlzheimerData/'
-# READ_DIR = '/mnt/home/ec2-user/alzstudy/AlzheimerData/'
+# READ_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/AlzheimerData/'
+READ_DIR = '/mnt/home/ec2-user/alzstudy/AlzheimerData/'
 # return the list of subjects that satisfy our criteria for finetuning
 def find_mci_subjects(img_dir=READ_DIR + 'ADNI_CAPS'):
     subjects_to_labels = defaultdict(list)  # subject: [label]
