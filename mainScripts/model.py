@@ -32,10 +32,10 @@ if psutil.Process().username() == 'haohanwang':
     READ_DIR = '/media/haohanwang/Storage/AlzheimerImagingData/'
     WEIGHTS_DIR = 'weights/'
 else:
-    # READ_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/AlzheimerData/'
-    READ_DIR = '/mnt/home/ec2-user/alzstudy/AlzheimerData/'
-    # WEIGHTS_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/weights/'
-    WEIGHTS_DIR = '/mnt/home/ec2-user/alzstudy/weights/'
+    READ_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/AlzheimerData/'
+    # READ_DIR = '/mnt/home/ec2-user/alzstudy/AlzheimerData/'
+    WEIGHTS_DIR = '/Users/gn03249822/Desktop/CMU/DirectedStudy/weights/'
+    # WEIGHTS_DIR = '/mnt/home/ec2-user/alzstudy/weights/'
 
 
 class minMaxPool(tf.keras.layers.Layer):
@@ -152,7 +152,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
         self.dropblock_flatten = DropBlockFlatten(keep_prob=0.5, block_size=8 * 8 * 8)
 
         self.flatten = layers.Flatten()
-        self.dp = layers.Dropout(0.5)
+        self.dp = layers.Dropout(0.3)
         self.dense1 = layers.Dense(units=1024, activation="elu")
         self.dense2 = layers.Dense(units=128, activation="elu")
         self.classifier = layers.Dense(units=nClass, activation="elu")
@@ -356,6 +356,10 @@ def train(args):
             with tf.GradientTape() as tape:
                 logits = model(x, training=True)
                 loss_value = compute_loss(y, logits)
+                tf.print("lables = ")
+                tf.print(y)
+                tf.print("predicted logits = ")
+                tf.print(logits)
             grads = tape.gradient(loss_value, model.trainable_weights)
             opt.apply_gradients(zip(grads, model.trainable_weights))
 
@@ -1174,7 +1178,8 @@ def activation_maximization_visualize(args):
 
 
 def main(args):
-    train(args)
+    with tf.device("/gpu:0"):
+        train(args)
 
 
 def get_model_info(args):
