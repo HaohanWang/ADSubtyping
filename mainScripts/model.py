@@ -176,18 +176,7 @@ class MRIImaging3DConvModel(tf.keras.Model):
         x = self.conv4(x)
         x = self.bn4(x)
         x = tf.nn.relu(x)
-
-
-        x = self.conv4(x)
-        x = self.bn4(x)
-        x = tf.nn.relu(x)
-
-
-        x = self.conv4(x)
-        x = self.bn4(x)
-        x = tf.nn.relu(x)
         x = self.pool4(x)
-
 
         x = self.conv5(x)
         x = self.bn5(x)
