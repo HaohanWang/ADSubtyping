@@ -43,6 +43,11 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
     original_csv_path = join(img_dir, 'split.pretrained.0.csv')
     text = [line.strip() for line in open(original_csv_path)]
 
+    mci_subjects_to_new_split = {}
+
+    for sub in mci_subjects_to_new_label.keys():
+        split = np.random.choice(['train', 'val', 'test'], p=[0.8, 0.1, 0.1])
+        mci_subjects_to_new_split[sub] = split
 
     with open(READ_DIR + 'ADNI_CAPS/mci_finetune_clean.csv', 'w') as file:
         for line in text[1:]:
@@ -55,10 +60,10 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
             original_label = items[4]
 
             if subject in mci_subjects_to_new_label and original_label == 'MCI':
-                split = np.random.choice(['train', 'val', 'test'], p=[0.8, 0.1, 0.1])
+                # split = np.random.choice(['train', 'val', 'test'], p=[0.8, 0.1, 0.1])
 
                 new_label = 'AD' if mci_subjects_to_new_label[subject] == 1 else 'CN'
-
+                split = mci_subjects_to_new_split[subject]
                 file.writelines(','.join([subject, session, age, gender, new_label]) + f',{split}\n')
 
     new_csv_path = READ_DIR + 'ADNI_CAPS/mci_finetune_clean.csv'
