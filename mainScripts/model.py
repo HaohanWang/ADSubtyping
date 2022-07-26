@@ -152,10 +152,10 @@ class MRIImaging3DConvModel(tf.keras.Model):
         self.dropblock_flatten = DropBlockFlatten(keep_prob=0.5, block_size=8 * 8 * 8)
 
         self.flatten = layers.Flatten()
-        self.dp = layers.Dropout(0.3)
-        self.dense1 = layers.Dense(units=1024, activation="elu")
-        self.dense2 = layers.Dense(units=128, activation="elu")
-        self.classifier = layers.Dense(units=nClass, activation="elu")
+        self.dp = layers.Dropout(0.5)
+        self.dense1 = layers.Dense(units=1024, activation="relu")
+        self.dense2 = layers.Dense(units=128, activation="relu")
+        self.classifier = layers.Dense(units=nClass, activation="relu")
 
         self.data_aug = MRIDataAugmentation((169, 208, 179), 0.5)
 
