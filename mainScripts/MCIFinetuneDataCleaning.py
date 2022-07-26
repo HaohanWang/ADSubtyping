@@ -69,7 +69,9 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
     new_csv_path = READ_DIR + 'ADNI_CAPS/mci_finetune_clean.csv'
     text = [line.strip() for line in open(new_csv_path)]
 
-    CN_rm = 0
+    CN_rm_train = 0
+    CN_rm_val = 0
+    CN_rm_test = 0
     with open(READ_DIR + 'ADNI_CAPS/mci_finetune_clean.csv', 'w') as file:
         for line in text:
             items = line.split(',')
@@ -80,8 +82,12 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
             label = items[4]
             split = items[5]
 
-            if split == 'train' and label == 'CN' and CN_rm < 270:
-                CN_rm += 1
+            if split == 'train' and label == 'CN' and CN_rm_train < 270:
+                CN_rm_train += 1
+            elif split == "val" and label == 'CN' and CN_rm_val < 70:
+                CN_rm_val += 1
+            elif split == "test" and label == "CN" and CN_rm_test < 130:
+                CN_rm_test += 1
             else:
                 file.writelines(','.join([subject, session, age, gender, label]) + f',{split}\n')
 
