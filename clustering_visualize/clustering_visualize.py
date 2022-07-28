@@ -30,7 +30,7 @@ def df2path(df, i):
     # return join('/media/haohanwang/Elements/saliency_map_dropblock2', df.split.iloc[i], df.participant_id.iloc[i], df.session_id.iloc[i] + '.npy')
     # return join(BASE_DIR + 'saliency_map_torch', df.split.iloc[i], df.participant_id.iloc[i],
     #             df.session_id.iloc[i] + '.npy')
-    return join(BASE_DIR + 'mci_from_scratch_saliency', df.split.iloc[i], df.participant_id.iloc[i],
+    return join(BASE_DIR + 'mci_finetune_clean_saliency_e_88', df.split.iloc[i], df.participant_id.iloc[i],
                 df.session_id.iloc[i] + '.npy')
 
 def path2subsess(path):
@@ -204,9 +204,9 @@ if __name__ == '__main__':
     tmp = tmp.drop_duplicates(subset=['participant_id'])
     df_snp = tmp.reset_index(drop=True)
 
-    train_df = pd.read_csv(BASE_DIR + 'mci_from_scratch_saliency/train_saliency_info.csv')
-    test_df = pd.read_csv(BASE_DIR + 'mci_from_scratch_saliency/test_saliency_info.csv')
-    val_df = pd.read_csv(BASE_DIR + 'mci_from_scratch_saliency/val_saliency_info.csv')
+    train_df = pd.read_csv(BASE_DIR + 'mci_finetune_clean_saliency_e_88/train_saliency_info.csv')
+    test_df = pd.read_csv(BASE_DIR + 'mci_finetune_clean_saliency_e_88/test_saliency_info.csv')
+    val_df = pd.read_csv(BASE_DIR + 'mci_finetune_clean_saliency_e_88/val_saliency_info.csv')
     df_pred = pd.concat([train_df, test_df, val_df])
     df_pred = df_pred.reset_index(drop=True)
 
@@ -223,5 +223,5 @@ if __name__ == '__main__':
     for p, l in tqdm(zip(snp_correct_paths, snp_correct_labels)):
         print(p)
         print(l)
-        drawFromPath(p,l, BASE_DIR + 'mci_visualization_from_scratch')
+        drawFromPath(p,l, BASE_DIR + 'mci_visualization_finetune_clean_0727_e88')
 
