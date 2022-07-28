@@ -82,14 +82,14 @@ def generate_mci_csv(img_dir=READ_DIR + 'ADNI_CAPS'):
             label = items[4]
             split = items[5]
 
-            if split == 'train' and label == 'CN' and CN_rm_train < 270:
-                CN_rm_train += 1
-            elif split == "val" and label == 'CN' and CN_rm_val < 70:
-                CN_rm_val += 1
-            elif split == "test" and label == "CN" and CN_rm_test < 10:
-                CN_rm_test += 1
-            else:
-                file.writelines(','.join([subject, session, age, gender, label]) + f',{split}\n')
+            # if split == 'train' and label == 'CN' and CN_rm_train < 270:
+            #     CN_rm_train += 1
+            # elif split == "val" and label == 'CN' and CN_rm_val < 70:
+            #     CN_rm_val += 1
+            # elif split == "test" and label == "CN" and CN_rm_test < 10:
+            #     CN_rm_test += 1
+            # else:
+            file.writelines(','.join([subject, session, age, gender, label]) + f',{split}\n')
 
 
 
